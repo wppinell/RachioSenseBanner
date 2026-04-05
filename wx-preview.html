@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Weather Tile Previews — Realistic Sky</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#080a10;font-family:'Inter',-apple-system,sans-serif;display:flex;flex-wrap:wrap;gap:28px;padding:36px;align-items:flex-start}
+  .label{color:#555970;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px}
+  .col{display:flex;flex-direction:column;width:290px}
+  .tile{width:290px;height:420px;border-radius:18px;overflow:hidden;position:relative;border:1px solid rgba(255,255,255,0.1);color:#fff}
+
+  /* shared overlay layout */
+  .sky-ov{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;padding:24px}
+  .top-row{display:flex;justify-content:space-between;align-items:flex-start}
+  .cond-lbl{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;opacity:0.7}
+  .temp-main{font-size:108px;font-weight:900;line-height:1;letter-spacing:-5px;text-shadow:0 4px 32px rgba(0,0,0,0.35)}
+  .deg-sup{font-size:44px;font-weight:300;vertical-align:super;letter-spacing:0}
+  .desc-lbl{font-size:16px;font-weight:500;opacity:0.85;margin-top:2px}
+  .bot-bar{background:rgba(0,0,0,0.28);backdrop-filter:blur(8px);border-radius:14px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center}
+  .hilo{display:flex;gap:16px;font-size:20px;font-weight:700}
+  .hi{color:rgba(255,210,140,1)}
+  .lo{color:rgba(200,235,255,1)}
+  .stats{display:flex;gap:14px;font-size:13px;opacity:0.8}
+</style>
+</head>
+<body>
+
+<!-- ── 1. CLEAR SUNNY ── -->
+<div class="col">
+  <div class="label">1 · Clear &amp; Sunny</div>
+  <div class="tile">
+    <!-- Realistic sky gradient: deep azur zenith → cyan horizon → pale haze -->
+    <div style="position:absolute;inset:0;background:linear-gradient(180deg,
+      #0b2d5c 0%,#0d3f7a 10%,#1565c0 28%,#1e88e5 45%,#42a5f5 62%,
+      #81d4fa 78%,#b3e5fc 90%,#e1f5fe 100%)"></div>
+
+    <!-- Atmospheric haze band near horizon -->
+    <div style="position:absolute;bottom:0;left:0;right:0;height:35%;
+      background:linear-gradient(0deg,rgba(200,235,255,0.35) 0%,transparent 100%)"></div>
+
+    <!-- Sun disk + glow layers -->
+    <svg style="position:absolute;top:18%;right:14%;width:130px;height:130px" viewBox="0 0 130 130">
+      <!-- outer corona -->
+      <circle cx="65" cy="65" r="62" fill="rgba(255,255,200,0.04)"/>
+      <circle cx="65" cy="65" r="56" fill="rgba(255,255,180,0.06)"/>
+      <circle cx="65" cy="65" r="48" fill="rgba(255,255,160,0.09)"/>
+      <circle cx="65" cy="65" r="40" fill="rgba(255,240,120,0.12)"/>
+      <circle cx="65" cy="65" r="30" fill="rgba(255,230,80,0.20)"/>
+      <!-- sun disk -->
+      <circle cx="65" cy="65" r="20" fill="rgba(255,248,200,0.95)"/>
+      <circle cx="65" cy="65" r="16" fill="#fff9d0"/>
+    </svg>
+
+    <!-- subtle lens flare streak -->
+    <div style="position:absolute;top:28%;right:12%;width:180px;height:1px;
+      background:linear-gradient(90deg,transparent,rgba(255,255,255,0.18),transparent);
+      transform:rotate(-15deg)"></div>
+
+    <div class="sky-ov">
+      <div class="top-row">
+        <div><div class="cond-lbl">Today · Phoenix</div><div class="desc-lbl">Clear &amp; Sunny</div></div>
+      </div>
+      <div>
+        <div><span class="temp-main">94</span><span class="deg-sup">°</span></div>
+      </div>
+      <div class="bot-bar">
+        <div class="hilo"><span class="hi">▲ 95°</span><span class="lo">▼ 66°</span></div>
+        <div class="stats"><span>💧 9%</span><span>💨 10 mph</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ── 2. PARTLY CLOUDY ── -->
+<div class="col">
+  <div class="label">2 · Partly Cloudy</div>
+  <div class="tile">
+    <div style="position:absolute;inset:0;background:linear-gradient(180deg,
+      #0d3a6e 0%,#1565c0 25%,#1e88e5 48%,#64b5f6 68%,#b0d8f5 85%,#daeefa 100%)"></div>
+
+    <!-- haze -->
+    <div style="position:absolute;bottom:0;left:0;right:0;height:30%;
+      background:linear-gradient(0deg,rgba(190,225,250,0.3) 0%,transparent 100%)"></div>
+
+    <!-- Sun (partially hidden) -->
+    <svg style="position:absolute;top:14%;right:8%;width:100px;height:100px" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="46" fill="rgba(255,250,180,0.07)"/>
+      <circle cx="50" cy="50" r="36" fill="rgba(255,245,150,0.12)"/>
+      <circle cx="50" cy="50" r="24" fill="rgba(255,240,100,0.22)"/>
+      <circle cx="50" cy="50" r="16" fill="rgba(255,252,200,0.90)"/>
+    </svg>
+
+    <!-- Cloud 1 — large, foreground -->
+    <svg style="position:absolute;top:22%;left:-4%;width:65%;opacity:0.96" viewBox="0 0 220 80">
+      <filter id="blur1"><feGaussianBlur stdDeviation="2"/></filter>
+      <ellipse cx="110" cy="55" rx="108" ry="28" fill="rgba(255,255,255,0.92)"/>
+      <ellipse cx="75"  cy="44" rx="55"  ry="35" fill="rgba(255,255,255,0.95)"/>
+      <ellipse cx="140" cy="46" rx="48"  ry="30" fill="rgba(255,255,255,0.90)"/>
+      <ellipse cx="110" cy="40" rx="40"  ry="28" fill="#ffffff"/>
+      <!-- shadow underside -->
+      <ellipse cx="110" cy="63" rx="105" ry="12" fill="rgba(160,180,210,0.35)"/>
+    </svg>
+
+    <!-- Cloud 2 — smaller, right -->
+    <svg style="position:absolute;top:38%;right:2%;width:48%;opacity:0.88" viewBox="0 0 160 60">
+      <ellipse cx="80" cy="42" rx="78" ry="20" fill="rgba(240,248,255,0.88)"/>
+      <ellipse cx="55" cy="33" rx="38"  ry="25" fill="rgba(248,252,255,0.93)"/>
+      <ellipse cx="105" cy="35" rx="34" ry="22" fill="rgba(248,252,255,0.88)"/>
+      <ellipse cx="80"  cy="30" rx="28" ry="20" fill="#f5f9ff"/>
+      <ellipse cx="80"  cy="48" rx="76" ry="10" fill="rgba(160,185,210,0.28)"/>
+    </svg>
+
+    <div class="sky-ov">
+      <div class="top-row">
+        <div><div class="cond-lbl">Today · Phoenix</div><div class="desc-lbl">Partly Cloudy</div></div>
+      </div>
+      <div><span class="temp-main">82</span><span class="deg-sup">°</span></div>
+      <div class="bot-bar">
+        <div class="hilo"><span class="hi">▲ 88°</span><span class="lo">▼ 62°</span></div>
+        <div class="stats"><span>💧 22%</span><span>💨 8 mph</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ── 3. OVERCAST ── -->
+<div class="col">
+  <div class="label">3 · Overcast</div>
+  <div class="tile">
+    <div style="position:absolute;inset:0;background:linear-gradient(180deg,
+      #2c3444 0%,#3d4b5c 18%,#4e5e70 38%,#607080 55%,#7a8a98 72%,#94a4b2 88%,#aab8c4 100%)"></div>
+
+    <!-- cloud mass layers -->
+    <svg style="position:absolute;top:0;left:0;width:100%;height:70%;opacity:1" viewBox="0 0 290 220" preserveAspectRatio="xMidYMid slice">
+      <filter id="soft"><feGaussianBlur stdDeviation="4"/></filter>
+      <!-- deep clouds -->
+      <ellipse cx="145" cy="80" rx="170" ry="70" fill="rgba(100,120,140,0.6)" filter="url(#soft)"/>
+      <ellipse cx="60"  cy="60" rx="100" ry="55" fill="rgba(85,105,125,0.7)"  filter="url(#soft)"/>
+      <ellipse cx="230" cy="70" rx="90"  ry="50" fill="rgba(90,110,130,0.65)" filter="url(#soft)"/>
+      <!-- mid clouds -->
+      <ellipse cx="145" cy="110" rx="160" ry="55" fill="rgba(120,140,158,0.55)" filter="url(#soft)"/>
+      <ellipse cx="40"  cy="100" rx="80"  ry="45" fill="rgba(110,130,150,0.6)"  filter="url(#soft)"/>
+      <!-- light diffuse top -->
+      <ellipse cx="145" cy="30" rx="180" ry="50" fill="rgba(150,168,186,0.35)" filter="url(#soft)"/>
+    </svg>
+
+    <!-- ground haze -->
+    <div style="position:absolute;bottom:0;left:0;right:0;height:25%;
+      background:linear-gradient(0deg,rgba(160,175,185,0.25) 0%,transparent 100%)"></div>
+
+    <div class="sky-ov">
+      <div class="top-row">
+        <div><div class="cond-lbl">Today · Phoenix</div><div class="desc-lbl">Overcast</div></div>
+      </div>
+      <div><span class="temp-main" style="text-shadow:0 2px 16px rgba(0,0,0,0.5)">68</span><span class="deg-sup">°</span></div>
+      <div class="bot-bar">
+        <div class="hilo"><span class="hi">▲ 72°</span><span class="lo">▼ 55°</span></div>
+        <div class="stats"><span>💧 55%</span><span>💨 12 mph</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ── 4. RAIN ── -->
+<div class="col">
+  <div class="label">4 · Rain</div>
+  <div class="tile">
+    <div style="position:absolute;inset:0;background:linear-gradient(180deg,
+      #0e1520 0%,#141e2e 15%,#1c2a3e 32%,#243348 50%,#2e3e54 68%,#3a4e64 85%,#485e74 100%)"></div>
+
+    <!-- dark cloud mass -->
+    <svg style="position:absolute;top:0;left:0;width:100%;height:60%;" viewBox="0 0 290 180" preserveAspectRatio="xMidYMid slice">
+      <filter id="cloudblur"><feGaussianBlur stdDeviation="5"/></filter>
+      <ellipse cx="145" cy="70" rx="175" ry="75" fill="rgba(30,42,60,0.9)"   filter="url(#cloudblur)"/>
+      <ellipse cx="60"  cy="55" rx="105" ry="60" fill="rgba(25,36,54,0.95)"  filter="url(#cloudblur)"/>
+      <ellipse cx="230" cy="60" rx="95"  ry="55" fill="rgba(28,40,58,0.92)"  filter="url(#cloudblur)"/>
+      <ellipse cx="145" cy="95" rx="165" ry="50" fill="rgba(35,48,68,0.85)"  filter="url(#cloudblur)"/>
+    </svg>
+
+    <!-- rain streaks -->
+    <svg style="position:absolute;inset:0;width:100%;height:100%;opacity:0.55" viewBox="0 0 290 420">
+      <g stroke="rgba(180,210,240,0.7)" stroke-width="1" stroke-linecap="round">
+        <line x1="20"  y1="120" x2="14"  y2="170"/>
+        <line x1="50"  y1="100" x2="44"  y2="155"/>
+        <line x1="80"  y1="130" x2="74"  y2="185"/>
+        <line x1="110" y1="110" x2="104" y2="165"/>
+        <line x1="140" y1="135" x2="134" y2="188"/>
+        <line x1="170" y1="105" x2="164" y2="162"/>
+        <line x1="200" y1="125" x2="194" y2="180"/>
+        <line x1="230" y1="115" x2="224" y2="170"/>
+        <line x1="260" y1="130" x2="254" y2="185"/>
+        <line x1="35"  y1="200" x2="29"  y2="255"/>
+        <line x1="65"  y1="190" x2="59"  y2="245"/>
+        <line x1="95"  y1="210" x2="89"  y2="265"/>
+        <line x1="125" y1="195" x2="119" y2="250"/>
+        <line x1="155" y1="215" x2="149" y2="268"/>
+        <line x1="185" y1="198" x2="179" y2="253"/>
+        <line x1="215" y1="208" x2="209" y2="263"/>
+        <line x1="245" y1="200" x2="239" y2="255"/>
+        <line x1="275" y1="212" x2="269" y2="265"/>
+        <line x1="10"  y1="290" x2="4"   y2="345"/>
+        <line x1="45"  y1="275" x2="39"  y2="330"/>
+        <line x1="75"  y1="295" x2="69"  y2="350"/>
+        <line x1="105" y1="280" x2="99"  y2="335"/>
+        <line x1="135" y1="300" x2="129" y2="355"/>
+        <line x1="165" y1="285" x2="159" y2="340"/>
+        <line x1="195" y1="298" x2="189" y2="352"/>
+        <line x1="225" y1="288" x2="219" y2="343"/>
+        <line x1="255" y1="302" x2="249" y2="356"/>
+        <line x1="280" y1="275" x2="274" y2="330"/>
+      </g>
+    </svg>
+
+    <div class="sky-ov">
+      <div class="top-row">
+        <div><div class="cond-lbl">Today · Phoenix</div><div class="desc-lbl">Rainy</div></div>
+      </div>
+      <div><span class="temp-main" style="text-shadow:0 4px 32px rgba(0,0,0,0.7)">58</span><span class="deg-sup">°</span></div>
+      <div class="bot-bar">
+        <div class="hilo"><span class="hi">▲ 62°</span><span class="lo">▼ 48°</span></div>
+        <div class="stats"><span>💧 85%</span><span>💨 18 mph</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ── 5. SUNSET ── -->
+<div class="col">
+  <div class="label">5 · Sunset</div>
+  <div class="tile">
+    <div style="position:absolute;inset:0;background:linear-gradient(180deg,
+      #0d0820 0%,#1a0a38 12%,#3d0f52 24%,#7b1d6b 35%,
+      #c0374a 48%,#e8633a 60%,#f4903a 70%,#f7b84a 80%,#fad87a 90%,#fdeea8 100%)"></div>
+
+    <!-- horizon glow -->
+    <div style="position:absolute;bottom:0;left:0;right:0;height:40%;
+      background:radial-gradient(ellipse 90% 60% at 50% 100%,rgba(255,200,80,0.55) 0%,transparent 70%)"></div>
+
+    <!-- sun near horizon -->
+    <svg style="position:absolute;bottom:28%;left:50%;transform:translateX(-50%);width:80px;height:80px" viewBox="0 0 80 80">
+      <circle cx="40" cy="40" r="38" fill="rgba(255,230,100,0.08)"/>
+      <circle cx="40" cy="40" r="32" fill="rgba(255,220,80,0.14)"/>
+      <circle cx="40" cy="40" r="24" fill="rgba(255,210,60,0.22)"/>
+      <circle cx="40" cy="40" r="18" fill="rgba(255,200,50,0.55)"/>
+      <circle cx="40" cy="40" r="12" fill="rgba(255,230,100,0.92)"/>
+      <circle cx="40" cy="40" r="8"  fill="#fff5c0"/>
+    </svg>
+
+    <!-- silhouette horizon line with cactus shapes -->
+    <svg style="position:absolute;bottom:24%;left:0;width:100%;height:60px" viewBox="0 0 290 60" preserveAspectRatio="none">
+      <path d="M0,45 Q20,42 40,44 L40,30 L43,30 L43,20 L46,20 L46,10 L49,10 L49,20 L52,20 L52,30 L55,30 L55,44 Q80,40 110,43 L110,32 L113,32 L113,24 L116,24 L116,18 L119,18 L119,24 L122,24 L122,32 L125,32 L125,43 Q150,41 180,44 L180,28 L184,28 L184,16 L188,16 L188,8 L192,8 L192,16 L196,16 L196,28 L200,28 L200,44 Q230,41 260,43 L260,34 L263,34 L263,26 L266,26 L266,20 L269,20 L269,26 L272,26 L272,34 L275,34 L275,43 Q285,42 290,44 L290,60 L0,60 Z"
+        fill="rgba(5,3,15,0.75)"/>
+    </svg>
+
+    <!-- ground dark band -->
+    <div style="position:absolute;bottom:0;left:0;right:0;height:24%;
+      background:linear-gradient(0deg,rgba(5,3,15,0.9) 0%,rgba(5,3,15,0.5) 60%,transparent 100%)"></div>
+
+    <div class="sky-ov">
+      <div class="top-row">
+        <div><div class="cond-lbl" style="opacity:0.6">Today · Phoenix</div><div class="desc-lbl" style="opacity:0.9">Sunset · Clear</div></div>
+      </div>
+      <div><span class="temp-main" style="font-size:100px;letter-spacing:-4px">88</span><span class="deg-sup">°</span></div>
+      <div class="bot-bar" style="background:rgba(0,0,0,0.4)">
+        <div class="hilo"><span class="hi">▲ 95°</span><span class="lo">▼ 66°</span></div>
+        <div class="stats"><span>💧 9%</span><span>💨 10 mph</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

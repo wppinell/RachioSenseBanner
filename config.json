@@ -1,0 +1,22 @@
+{
+  "sensor_zone_mapping": {
+    "2CF7F1C062700084": "17a472bc-bbe5-4e7c-babb-fdf73a98b7aa",
+    "2CF7F1C0608000C1": "8d58a89d-61b4-4339-a92c-84d7aa6705db",
+    "2CF7F1C062700067": "b75890fb-389b-49a1-933b-8521d71830d7",
+    "2CF7F1C060800075": "ca2e2740-795a-4712-9ada-4c6b696d08b4",
+    "2CF7F1C060800064": "760527a9-82d3-4147-bdd0-da069dc82840",
+    "2CF7F1C0608000C3": "ca2e2740-795a-4712-9ada-4c6b696d08b4",
+    "2CF7F1C06270006E": "b75890fb-389b-49a1-933b-8521d71830d7",
+    "2CF7F1C0627000A8": "b75890fb-389b-49a1-933b-8521d71830d7"
+  },
+  "_comments": {
+    "2CF7F1C062700084": "orange tree → Citrus trees (zone 9)",
+    "2CF7F1C0608000C1": "herb garden east → Lettuce Garden (zone 5)",
+    "2CF7F1C062700067": "ficus 14 → Column Ficus (zone 7)",
+    "2CF7F1C060800075": "tomato garden north → Tomato Garden (zone 4)",
+    "2CF7F1C060800064": "ground cover → Backyard gndcover (zone 6)",
+    "2CF7F1C0608000C3": "tomato garden south → Tomato Garden (zone 4)",
+    "2CF7F1C06270006E": "ficus 9 → Column Ficus (zone 7)",
+    "2CF7F1C0627000A8": "ficus 11 → Column Ficus (zone 7)"
+  }
+}
