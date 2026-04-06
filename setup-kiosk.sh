@@ -47,7 +47,7 @@ log_info "Starting RachioSense Pi Dashboard setup..."
 # Define variables
 ###############################################################################
 
-PI_USER="${PI_USER:-pi}"
+PI_USER="${PI_USER:-wppinell}"
 DASHBOARD_DIR="/home/${PI_USER}/rachiosense-dashboard"
 VENV_DIR="${DASHBOARD_DIR}/venv"
 SERVICE_NAME="rachiosense-dashboard"
@@ -251,9 +251,9 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=pi
-WorkingDirectory=/home/pi/rachiosense-dashboard
-ExecStart=/home/pi/rachiosense-dashboard/venv/bin/python3 server.py
+User=${PI_USER}
+WorkingDirectory=/home/${PI_USER}/rachiosense-dashboard
+ExecStart=/home/${PI_USER}/rachiosense-dashboard/venv/bin/python3 server.py
 Restart=always
 RestartSec=10
 StandardOutput=journal
