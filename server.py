@@ -691,6 +691,33 @@ dashboard_data = {}
 data_lock = threading.Lock()
 _last_good_zones = []       # preserve last successful zone fetch
 _last_good_zones_at = None  # ISO timestamp of last good zone data
+_ZONE_CACHE_FILE = Path(__file__).parent / '.zone_cache.json'
+
+def _save_zone_cache(zones, timestamp):
+    """Persist last good zone data to disk so it survives restarts."""
+    try:
+        with open(_ZONE_CACHE_FILE, 'w') as f:
+            json.dump({'zones': zones, 'cachedAt': timestamp}, f)
+    except Exception as e:
+        logger.warning(f'Failed to write zone cache: {e}')
+
+def _load_zone_cache():
+    """Load cached zone data from disk."""
+    try:
+        if _ZONE_CACHE_FILE.exists():
+            with open(_ZONE_CACHE_FILE) as f:
+                data = json.load(f)
+            zones = data.get('zones', [])
+            ts = data.get('cachedAt')
+            if zones:
+                logger.info(f'Loaded {len(zones)} zones from disk cache ({ts})')
+                return zones, ts
+    except Exception as e:
+        logger.warning(f'Failed to read zone cache: {e}')
+    return [], None
+
+# Restore cache from disk on startup
+_last_good_zones, _last_good_zones_at = _load_zone_cache()
 
 def aggregate_all_data():
     global _last_good_zones, _last_good_zones_at
@@ -713,10 +740,11 @@ def aggregate_all_data():
         weather_raw = weather_api.get_weather(LATITUDE, LONGITUDE)
         now = datetime.now(timezone.utc).isoformat()
 
-        # If we got fresh zones, save them
+        # If we got fresh zones, save them (memory + disk)
         if zones:
             _last_good_zones = zones
             _last_good_zones_at = now
+            _save_zone_cache(zones, now)
             stale = False
         elif _last_good_zones:
             # API failed — use cached zones with stale flag
