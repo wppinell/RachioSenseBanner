@@ -209,12 +209,12 @@ if [ ! -f "$ENV_FILE" ] || [[ $REPLY =~ ^[Yy]$ ]]; then
   LONGITUDE=${LONGITUDE:--112.0740}
 
   # Port
-  read -p "Server port (default: 8080): " PORT
-  PORT=${PORT:-8080}
+  read -p "Server port (default: 8090): " PORT
+  PORT=${PORT:-8090}
 
   # Refresh interval
-  read -p "Refresh interval in seconds (default: 120): " REFRESH_INTERVAL
-  REFRESH_INTERVAL=${REFRESH_INTERVAL:-120}
+  read -p "Refresh interval in seconds (default: 1800): " REFRESH_INTERVAL
+  REFRESH_INTERVAL=${REFRESH_INTERVAL:-1800}
 
   # Create .env file
   cat > "$ENV_FILE" << EOL
@@ -253,7 +253,7 @@ Wants=network-online.target
 Type=simple
 User=pi
 WorkingDirectory=/home/pi/rachiosense-dashboard
-ExecStart=/home/pi/rachiosense-dashboard/venv/bin/python3 app.py
+ExecStart=/home/pi/rachiosense-dashboard/venv/bin/python3 server.py
 Restart=always
 RestartSec=10
 StandardOutput=journal
@@ -310,7 +310,7 @@ chromium-browser \
   --disable-background-networking \
   --disable-default-apps \
   --disable-preconnect \
-  http://localhost:8080
+  http://localhost:8090
 EOF
 
 chmod +x "$KIOSK_SCRIPT"
