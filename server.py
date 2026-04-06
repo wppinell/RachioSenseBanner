@@ -689,8 +689,11 @@ def build_services(rachio, sensecraft, zones):
 # ── Main aggregation ──
 dashboard_data = {}
 data_lock = threading.Lock()
+_last_good_zones = []       # preserve last successful zone fetch
+_last_good_zones_at = None  # ISO timestamp of last good zone data
 
 def aggregate_all_data():
+    global _last_good_zones, _last_good_zones_at
     logger.info('Aggregating dashboard data...')
     try:
         rachio = RachioAPI(RACHIO_API_KEY) if RACHIO_API_KEY else None
@@ -708,22 +711,44 @@ def aggregate_all_data():
                 zones, schedule_info = build_zone_data(rachio, sensecraft, device_id)
 
         weather_raw = weather_api.get_weather(LATITUDE, LONGITUDE)
+        now = datetime.now(timezone.utc).isoformat()
+
+        # If we got fresh zones, save them
+        if zones:
+            _last_good_zones = zones
+            _last_good_zones_at = now
+            stale = False
+        elif _last_good_zones:
+            # API failed — use cached zones with stale flag
+            zones = _last_good_zones
+            stale = True
+            logger.warning(f'Using cached zone data from {_last_good_zones_at}')
+        else:
+            stale = False
 
         return {
             'zones': zones,
             'alerts': build_alerts(zones, schedule_info),
             'weather': build_weather(weather_raw),
             'services': build_services(rachio, sensecraft, zones),
-            'updatedAt': datetime.now(timezone.utc).isoformat(),
+            'updatedAt': now,
+            'stale': stale,
+            'staleDataFrom': _last_good_zones_at if stale else None,
         }
     except Exception as e:
         logger.error(f'Aggregation failed: {e}', exc_info=True)
+        now = datetime.now(timezone.utc).isoformat()
+        # Even on total failure, preserve cached zones
+        zones = _last_good_zones if _last_good_zones else []
+        stale = bool(_last_good_zones)
         return {
-            'zones': [],
+            'zones': zones,
             'alerts': [{'level': 'crit', 'icon': '❌', 'message': f'Dashboard error: {e}'}],
             'weather': None,
             'services': {},
-            'updatedAt': datetime.now(timezone.utc).isoformat(),
+            'updatedAt': now,
+            'stale': stale,
+            'staleDataFrom': _last_good_zones_at if stale else None,
         }
 
 # ── Background refresh thread ──
@@ -732,21 +757,24 @@ RETRY_INTERVAL = 60  # seconds to wait before retrying after a failed/empty fetc
 def background_refresh():
     global dashboard_data
     while True:
-        # If zones are empty (API failure/rate limit), retry sooner
+        # If no fresh zones yet, retry sooner
         with data_lock:
+            is_stale = dashboard_data.get('stale', False)
             has_zones = bool(dashboard_data.get('zones'))
-        sleep_time = RETRY_INTERVAL if not has_zones else REFRESH_INTERVAL
-        if not has_zones:
-            logger.info(f'No zone data — retrying in {RETRY_INTERVAL}s')
+        sleep_time = RETRY_INTERVAL if (is_stale or not has_zones) else REFRESH_INTERVAL
+        if is_stale or not has_zones:
+            logger.info(f'Zone data stale/missing — retrying in {RETRY_INTERVAL}s')
         time.sleep(sleep_time)
         try:
             new_data = aggregate_all_data()
             with data_lock:
                 dashboard_data = new_data
-            if new_data.get('zones'):
-                logger.info(f'Background refresh complete — {len(new_data["zones"])} zones')
+            if new_data.get('zones') and not new_data.get('stale'):
+                logger.info(f'Background refresh complete — {len(new_data["zones"])} zones (fresh)')
+            elif new_data.get('zones'):
+                logger.warning(f'Background refresh — {len(new_data["zones"])} zones (stale cache)')
             else:
-                logger.warning('Background refresh complete — still no zones')
+                logger.warning('Background refresh complete — no zones at all')
         except Exception as e:
             logger.error(f'Background refresh error: {e}')
 

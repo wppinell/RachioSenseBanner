@@ -190,6 +190,18 @@
     height:100%;font-size:16px;color:var(--text-sec);
   }
 
+  /* Stale data banner */
+  .stale-banner{
+    display:none;align-items:center;justify-content:center;gap:10px;
+    padding:6px 16px;
+    background:rgba(255,202,40,0.12);
+    border-bottom:1px solid rgba(255,202,40,0.25);
+    font-size:13px;color:#ffca28;flex-shrink:0;
+  }
+  .stale-banner.visible{display:flex}
+  .stale-banner .stale-dot{width:8px;height:8px;border-radius:50%;background:#ffca28;animation:stale-pulse 2s ease-in-out infinite}
+  @keyframes stale-pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+
   /* Gear button */
   .gear-btn{
     background:none;border:none;cursor:pointer;
@@ -269,6 +281,12 @@
     <span id="svc-rachio"><span class="dot"></span>Rachio</span>
     <button class="gear-btn" onclick="openSettings()" title="Settings">⚙</button>
   </div>
+</div>
+
+<!-- Stale data banner -->
+<div class="stale-banner" id="stale-banner">
+  <div class="stale-dot"></div>
+  <span id="stale-msg">Showing cached data — retrying...</span>
 </div>
 
 <!-- Settings Modal -->
@@ -839,6 +857,24 @@ function renderDashboard(data) {
   }, 300);
 
   updateHeader(data);
+
+  // Stale data banner
+  const banner = document.getElementById('stale-banner');
+  if (data.stale) {
+    const ago = data.staleDataFrom ? timeAgo(data.staleDataFrom) : '';
+    document.getElementById('stale-msg').textContent = `Showing cached data${ago ? ' from ' + ago : ''} — retrying...`;
+    banner.classList.add('visible');
+  } else {
+    banner.classList.remove('visible');
+  }
+}
+
+function timeAgo(iso) {
+  const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (diff < 60) return 'just now';
+  if (diff < 3600) return Math.floor(diff / 60) + ' min ago';
+  if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+  return Math.floor(diff / 86400) + 'd ago';
 }
 
 let lastData = null;
