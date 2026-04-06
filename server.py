@@ -39,6 +39,7 @@ SENSECRAFT_API_KEY = os.getenv('SENSECRAFT_API_KEY', '')
 SENSECRAFT_API_SECRET = os.getenv('SENSECRAFT_API_SECRET', '')
 LATITUDE = float(os.getenv('LATITUDE', '33.4484'))
 LONGITUDE = float(os.getenv('LONGITUDE', '-112.0740'))
+ZIP_CODE = os.getenv('ZIP_CODE', '')
 PORT = int(os.getenv('PORT', '8080'))
 REFRESH_INTERVAL = int(os.getenv('REFRESH_INTERVAL', '1800'))
 
@@ -809,6 +810,119 @@ def api_health():
         'rachio_configured': bool(RACHIO_API_KEY),
         'sensecraft_configured': bool(SENSECRAFT_API_KEY),
     })
+
+def mask(val, show=4):
+    """Mask a secret, showing only last N chars."""
+    if not val: return ''
+    return '•' * max(0, len(val) - show) + val[-show:]
+
+def zip_to_latlon(zip_code: str):
+    """Convert US ZIP code to lat/lon using Nominatim. Returns (lat, lon) or None."""
+    try:
+        url = 'https://nominatim.openstreetmap.org/search'
+        params = {'postalcode': zip_code, 'country': 'US', 'format': 'json', 'limit': 1}
+        headers = {'User-Agent': 'RachioSense/1.0'}
+        resp = requests.get(url, params=params, headers=headers, timeout=5)
+        data = resp.json()
+        if data:
+            return float(data[0]['lat']), float(data[0]['lon'])
+    except Exception as e:
+        logger.warning(f'Geocoding failed for ZIP {zip_code}: {e}')
+    return None
+
+@app.route('/api/config', methods=['GET'])
+def api_config_get():
+    """Return current configuration (secrets masked)."""
+    config_path = Path(__file__).parent / 'config.json'
+    cfg = {}
+    if config_path.exists():
+        with open(config_path) as f:
+            cfg = json.load(f)
+    mappings = []
+    for eui, zone_id in cfg.get('sensor_zone_mapping', {}).items():
+        comment = cfg.get('_comments', {}).get(eui, '')
+        mappings.append({'eui': eui, 'zone_id': zone_id, 'comment': comment})
+    return jsonify({
+        'rachio_api_key': mask(RACHIO_API_KEY),
+        'sensecraft_api_id': mask(SENSECRAFT_API_KEY),
+        'sensecraft_api_secret': mask(SENSECRAFT_API_SECRET),
+        'zip_code': ZIP_CODE,
+        'latitude': LATITUDE,
+        'longitude': LONGITUDE,
+        'refresh_interval': REFRESH_INTERVAL,
+        'sensor_mappings': mappings,
+    })
+
+@app.route('/api/config', methods=['POST'])
+def api_config_post():
+    """Save configuration to .env and config.json."""
+    from flask import request
+    data = request.get_json() or {}
+    env_path = Path(__file__).parent / '.env'
+    config_path = Path(__file__).parent / 'config.json'
+
+    # Read existing .env lines
+    lines = []
+    if env_path.exists():
+        with open(env_path) as f:
+            lines = f.readlines()
+
+    def set_env(lines, key, value):
+        for i, line in enumerate(lines):
+            if line.startswith(key + '='):
+                lines[i] = f'{key}={value}\n'
+                return lines
+        lines.append(f'{key}={value}\n')
+        return lines
+
+    # Only update non-masked values (if user entered new value, not all bullets)
+    def is_new_val(v):
+        return v and '•' not in str(v)
+
+    if is_new_val(data.get('rachio_api_key')):
+        lines = set_env(lines, 'RACHIO_API_KEY', data['rachio_api_key'])
+    if is_new_val(data.get('sensecraft_api_id')):
+        lines = set_env(lines, 'SENSECRAFT_API_KEY', data['sensecraft_api_id'])
+    if is_new_val(data.get('sensecraft_api_secret')):
+        lines = set_env(lines, 'SENSECRAFT_API_SECRET', data['sensecraft_api_secret'])
+    if data.get('zip_code'):
+        zip_code = data['zip_code'].strip()
+        lines = set_env(lines, 'ZIP_CODE', zip_code)
+        coords = zip_to_latlon(zip_code)
+        if coords:
+            lines = set_env(lines, 'LATITUDE', str(coords[0]))
+            lines = set_env(lines, 'LONGITUDE', str(coords[1]))
+            logger.info(f'ZIP {zip_code} resolved to {coords[0]}, {coords[1]}')
+        else:
+            logger.warning(f'Could not geocode ZIP {zip_code}')
+    if data.get('refresh_interval'):
+        lines = set_env(lines, 'REFRESH_INTERVAL', data['refresh_interval'])
+
+    with open(env_path, 'w') as f:
+        f.writelines(lines)
+
+    # Update sensor mappings in config.json
+    if 'sensor_mappings' in data:
+        cfg = {}
+        if config_path.exists():
+            with open(config_path) as f:
+                cfg = json.load(f)
+        new_mapping = {}
+        new_comments = {}
+        for m in data['sensor_mappings']:
+            eui = m.get('eui', '').strip().upper()
+            zone_id = m.get('zone_id', '').strip()
+            comment = m.get('comment', '').strip()
+            if eui and zone_id:
+                new_mapping[eui] = zone_id
+                if comment:
+                    new_comments[eui] = comment
+        cfg['sensor_zone_mapping'] = new_mapping
+        cfg['_comments'] = new_comments
+        with open(config_path, 'w') as f:
+            json.dump(cfg, f, indent=2)
+
+    return jsonify({'status': 'saved', 'message': 'Restart server to apply changes.'})
 
 # ── Main ──
 if __name__ == '__main__':

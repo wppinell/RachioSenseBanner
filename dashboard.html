@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=1920">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>RachioSense</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
@@ -29,7 +29,7 @@
     font-family:'Inter',-apple-system,sans-serif;
     background:var(--bg);
     color:var(--text);
-    width:1920px;height:1200px;
+    width:100vw;height:100vh;
     overflow:hidden;
     display:flex;flex-direction:column;
   }
@@ -37,7 +37,7 @@
   /* ── Header ── */
   .hdr{
     display:flex;align-items:center;justify-content:space-between;
-    padding:0 24px;height:44px;flex-shrink:0;
+    padding:0 32px;height:52px;flex-shrink:0;
     background:rgba(12,14,22,0.95);border-bottom:1px solid var(--border);
   }
   .hdr-l{display:flex;align-items:center;gap:18px}
@@ -45,8 +45,8 @@
   .logo span{color:var(--green)}
   .hdr-w{display:flex;gap:16px;font-size:12px;color:var(--text-sec)}
   .hdr-w .big{font-size:16px;font-weight:700;color:var(--text)}
-  .hdr-r{display:flex;align-items:center;gap:16px;font-size:11px;color:var(--text-sec)}
-  .hdr-r .dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);margin-right:3px}
+  .hdr-r{display:flex;align-items:center;gap:20px;font-size:16px;color:var(--text-sec);flex-shrink:0;white-space:nowrap}
+  .hdr-r .dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--green);margin-right:6px}
   .hdr-r .dot.offline{background:#666}
   .clk{font-size:14px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
 
@@ -140,8 +140,8 @@
   .wx-tile{color:#fff;}
   .sky-ov{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;padding:26px 28px}
   .wx-top{display:flex;flex-direction:column;gap:3px}
-  .wx-date-label{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;opacity:0.65}
-  .wx-desc-label{font-size:17px;font-weight:500;opacity:0.9;text-transform:capitalize}
+  .wx-date-label{font-size:20px;font-weight:700;letter-spacing:1px;text-transform:uppercase;opacity:0.65}
+  .wx-desc-label{font-size:22px;font-weight:500;opacity:0.9;text-transform:capitalize}
   .wx-big-temp{font-size:110px;font-weight:900;line-height:1;letter-spacing:-5px;text-shadow:0 4px 32px rgba(0,0,0,0.35)}
   .wx-deg{font-size:46px;font-weight:300;vertical-align:super;letter-spacing:0}
   .wx-hilo{display:flex;gap:20px;font-size:24px;font-weight:700;margin-bottom:12px}
@@ -149,8 +149,8 @@
   .wx-lo{color:rgba(200,235,255,1)}
   .wx-stats{display:flex;align-items:center;gap:0;background:rgba(0,0,0,0.28);backdrop-filter:blur(6px);border-radius:14px;padding:12px 0;margin-bottom:4px}
   .wx-stat{flex:1;text-align:center}
-  .wx-stat-val{font-size:26px;font-weight:800}
-  .wx-stat-lbl{font-size:10px;font-weight:600;opacity:0.6;text-transform:uppercase;letter-spacing:1px;margin-top:2px}
+  .wx-stat-val{font-size:32px;font-weight:800}
+  .wx-stat-lbl{font-size:13px;font-weight:600;opacity:0.6;text-transform:uppercase;letter-spacing:1px;margin-top:2px}
   .wx-stat-div{width:1px;background:rgba(255,255,255,0.18);align-self:stretch}
   .ap-title{font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:1.2px}
   .al{
@@ -189,6 +189,73 @@
     display:flex;align-items:center;justify-content:center;
     height:100%;font-size:16px;color:var(--text-sec);
   }
+
+  /* Gear button */
+  .gear-btn{
+    background:none;border:none;cursor:pointer;
+    color:var(--text-dim);font-size:28px;padding:4px 8px;
+    border-radius:6px;transition:color 0.2s,background 0.2s;
+    line-height:1;
+  }
+  .gear-btn:hover{color:var(--text);background:rgba(255,255,255,0.08)}
+
+  /* Settings modal */
+  .settings-backdrop{
+    display:none;position:fixed;inset:0;
+    background:rgba(0,0,0,0.65);backdrop-filter:blur(4px);
+    z-index:100;align-items:center;justify-content:center;
+  }
+  .settings-backdrop.open{display:flex}
+  .settings-modal{
+    background:#12151f;border:1px solid rgba(255,255,255,0.1);
+    border-radius:20px;padding:32px;width:680px;max-height:85vh;
+    overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,0.6);
+  }
+  .settings-modal h2{
+    font-size:16px;font-weight:800;color:var(--accent);
+    text-transform:uppercase;letter-spacing:1.5px;margin-bottom:24px;
+  }
+  .settings-section{
+    font-size:11px;font-weight:700;color:var(--text-dim);
+    text-transform:uppercase;letter-spacing:1.2px;
+    margin:20px 0 10px;
+  }
+  .settings-row{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.04);
+    gap:16px;
+  }
+  .settings-row label{font-size:14px;color:var(--text-sec);flex:1}
+  .settings-row input[type=range]{flex:1;accent-color:var(--accent)}
+  .settings-row input[type=text],.settings-row input[type=number]{
+    flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);
+    border-radius:8px;padding:7px 12px;color:var(--text);font-size:13px;
+    font-family:monospace;outline:none;
+  }
+  .settings-row input[type=text]:focus,.settings-row input[type=number]:focus{
+    border-color:var(--accent);
+  }
+  .settings-row .val{
+    font-size:14px;font-weight:700;color:var(--text);
+    min-width:60px;text-align:right;font-variant-numeric:tabular-nums;
+  }
+  .settings-actions{
+    display:flex;gap:10px;margin-top:24px;justify-content:flex-end;
+  }
+  .btn{
+    padding:10px 22px;border-radius:10px;border:none;
+    font-size:14px;font-weight:700;cursor:pointer;
+  }
+  .btn-primary{background:var(--accent);color:#080a10}
+  .btn-secondary{background:rgba(255,255,255,0.08);color:var(--text)}
+  .btn:hover{opacity:0.85}
+  .mapping-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}
+  .mapping-table th{text-align:left;padding:6px 8px;color:var(--text-dim);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.8px;border-bottom:1px solid rgba(255,255,255,0.08)}
+  .mapping-table td{padding:5px 6px;vertical-align:middle}
+  .mapping-table input{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:5px 8px;color:var(--text);font-size:11px;font-family:monospace;outline:none}
+  .mapping-table input:focus{border-color:var(--accent)}
+  .save-note{font-size:11px;color:var(--yellow);margin-top:12px;display:none}
+  .save-note.visible{display:block}
 </style>
 </head>
 <body>
@@ -196,16 +263,85 @@
 <div class="hdr">
   <div class="hdr-l">
     <div class="logo">Rachio<span>Sense</span></div>
-    <div class="hdr-w">
-      <span class="big" id="temp">☀️ --°F</span>
-      <span id="humidity">💧 --%</span>
-      <span id="wind">💨 -- mph</span>
-    </div>
   </div>
   <div class="hdr-r">
     <span id="svc-sensecraft"><span class="dot"></span>SenseCraft</span>
-    <span id="svc-rachio"><span class="dot"></span>Rachio --</span>
-    <span class="clk" id="clk"></span>
+    <span id="svc-rachio"><span class="dot"></span>Rachio</span>
+    <button class="gear-btn" onclick="openSettings()" title="Settings">⚙</button>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="settings-backdrop" id="settings-backdrop" onclick="closeSettingsBackdrop(event)">
+  <div class="settings-modal">
+    <h2>⚙ Dashboard Settings</h2>
+
+    <!-- DISPLAY SETTINGS -->
+    <div class="settings-section">Watering Rings — Max Scale</div>
+    <div class="settings-row">
+      <label>1-day ring max</label>
+      <input type="range" id="s-mx1d" min="30" max="180" step="5" oninput="updateVal('mx1d',this.value,'min')">
+      <span class="val" id="v-mx1d">90 min</span>
+    </div>
+    <div class="settings-row">
+      <label>7-day ring max</label>
+      <input type="range" id="s-mx7d" min="120" max="840" step="30" oninput="updateVal('mx7d',this.value,'min')">
+      <span class="val" id="v-mx7d">420 min</span>
+    </div>
+
+    <div class="settings-section">Moisture Thresholds</div>
+    <div class="settings-row">
+      <label>🔴 Dry below</label>
+      <input type="range" id="s-mdry" min="5" max="40" step="1" oninput="updateVal('mdry',this.value,'%')">
+      <span class="val" id="v-mdry">20%</span>
+    </div>
+    <div class="settings-row">
+      <label>🟡 Low below</label>
+      <input type="range" id="s-mlow" min="10" max="50" step="1" oninput="updateVal('mlow',this.value,'%')">
+      <span class="val" id="v-mlow">25%</span>
+    </div>
+    <div class="settings-row">
+      <label>🔵 Wet above</label>
+      <input type="range" id="s-mwet" min="20" max="70" step="1" oninput="updateVal('mwet',this.value,'%')">
+      <span class="val" id="v-mwet">40%</span>
+    </div>
+
+    <!-- SERVER SETTINGS -->
+    <div class="settings-section">Rachio</div>
+    <div class="settings-row">
+      <label>API Key</label>
+      <input type="text" id="s-rachio-key" placeholder="Enter new key to change…">
+    </div>
+
+    <div class="settings-section">SenseCraft</div>
+    <div class="settings-row">
+      <label>API ID</label>
+      <input type="text" id="s-sc-id" placeholder="Enter new ID to change…">
+    </div>
+    <div class="settings-row">
+      <label>API Secret</label>
+      <input type="text" id="s-sc-secret" placeholder="Enter new secret to change…">
+    </div>
+
+    <div class="settings-section">Location (Weather)</div>
+    <div class="settings-row">
+      <label>ZIP Code</label>
+      <input type="text" id="s-zip" placeholder="e.g. 85001" style="flex:0.3;max-width:140px">
+      <span class="val" id="v-zip-coords" style="font-size:11px;color:var(--text-dim);text-align:left;min-width:auto;flex:1;padding-left:12px"></span>
+    </div>
+
+    <div class="settings-section">Sensor → Zone Mappings</div>
+    <table class="mapping-table" id="mapping-table">
+      <thead><tr><th>Sensor EUI</th><th>Zone</th><th>Description</th><th></th></tr></thead>
+      <tbody id="mapping-tbody"></tbody>
+    </table>
+
+<div class="save-note" id="save-note">⚠ Server settings require a server restart to take effect.</div>
+
+    <div class="settings-actions">
+      <button class="btn btn-secondary" onclick="closeSettings()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSettings()">Save & Apply</button>
+    </div>
   </div>
 </div>
 
@@ -214,8 +350,124 @@
 </div>
 
 <script>
-const MX_1D = 90;   // 90 min = full 1-day ring
-const MX_7D = 420;  // 7 hours = full 7-day ring
+// Settings — loaded from localStorage with defaults
+const DEFAULTS = { mx1d:90, mx7d:420, mdry:20, mlow:25, mwet:40 };
+let CFG = Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem('rsConfig') || '{}'));
+let MX_1D = CFG.mx1d;
+let MX_7D = CFG.mx7d;
+
+async function openSettings() {
+  // Load display settings from localStorage
+  ['mx1d','mx7d','mdry','mlow','mwet'].forEach(k => {
+    const sl = document.getElementById('s-'+k);
+    if (sl) { sl.value = CFG[k]; updateVal(k, CFG[k], (k==='mx1d'||k==='mx7d') ? 'min' : '%'); }
+  });
+  // Load server config
+  try {
+    const res = await fetch('/api/config');
+    const cfg = await res.json();
+    document.getElementById('s-rachio-key').placeholder = cfg.rachio_api_key || 'Not set';
+    document.getElementById('s-sc-id').placeholder = cfg.sensecraft_api_id || 'Not set';
+    document.getElementById('s-sc-secret').placeholder = cfg.sensecraft_api_secret || 'Not set';
+    document.getElementById('s-zip').value = cfg.zip_code || '';
+    const coordEl = document.getElementById('v-zip-coords');
+    if (cfg.latitude && cfg.longitude)
+      coordEl.textContent = `→ ${cfg.latitude}, ${cfg.longitude}`;
+    document.getElementById('s-zip').addEventListener('input', () => { coordEl.textContent = ''; });
+    // Build zone options — active zones only (server already filters)
+    const zones = (lastData && lastData.zones) ? lastData.zones : [];
+
+    // Fetch sensor list for EUI picker
+    let sensors = [];
+    try {
+      const sr = await fetch('/api/sensors');
+      const sd = await sr.json();
+      sensors = sd.sensors || [];
+    } catch(e) { console.warn('Could not load sensors', e); }
+
+    const selStyle = `style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:5px 8px;color:#f0f2f5;font-size:12px;outline:none"`;
+
+    function euiOpts(selected='') {
+      return sensors.map(s =>
+        `<option value="${s.eui}" ${s.eui===selected?'selected':''}>${s.name||s.eui} (…${s.eui.slice(-4)})</option>`
+      ).join('');
+    }
+    function zoneOpts(selected='') {
+      return zones.map(z =>
+        `<option value="${z.id}" ${z.id===selected?'selected':''}>${z.name}</option>`
+      ).join('');
+    }
+
+    // Build a lookup of existing EUI→zone mappings
+    const existingMap = {};
+    (cfg.sensor_mappings || []).forEach(m => { existingMap[m.eui] = { zone_id: m.zone_id, comment: m.comment }; });
+
+    // One fixed row per sensor — zone picker includes None
+    const tbody = document.getElementById('mapping-tbody');
+    tbody.innerHTML = sensors.map((s,i) => {
+      const mapped = existingMap[s.eui] || {};
+      return `<tr>
+        <td style="font-size:12px;padding:5px 6px">${s.name || s.eui}<br><span style="font-size:10px;opacity:0.45;font-family:monospace">…${s.eui.slice(-4)}</span></td>
+        <td><select data-eui="${s.eui}" data-f="zone_id" ${selStyle}>
+          <option value="">None</option>${zoneOpts(mapped.zone_id||'')}
+        </select></td>
+        <td><input value="${mapped.comment||''}" data-eui="${s.eui}" data-f="comment" placeholder="description" style="width:100%"></td>
+      </tr>`;
+    }).join('');
+
+    window._settingsSensors = sensors;
+    window._settingsZones = zones;
+
+  } catch(e) { console.error('Failed to load server config', e); }
+  document.getElementById('settings-backdrop').classList.add('open');
+}
+function closeSettings() {
+  document.getElementById('settings-backdrop').classList.remove('open');
+  document.getElementById('save-note').classList.remove('visible');
+}
+function closeSettingsBackdrop(e) {
+  if (e.target === document.getElementById('settings-backdrop')) closeSettings();
+}
+function updateVal(k, v, unit) {
+  const el = document.getElementById('v-'+k);
+  if (el) el.textContent = v + ' ' + unit;
+}
+async function saveSettings() {
+  // Save display settings to localStorage
+  ['mx1d','mx7d','mdry','mlow','mwet'].forEach(k => {
+    const sl = document.getElementById('s-'+k);
+    if (sl) CFG[k] = parseInt(sl.value);
+  });
+  localStorage.setItem('rsConfig', JSON.stringify(CFG));
+  MX_1D = CFG.mx1d;
+  MX_7D = CFG.mx7d;
+
+  // Collect mapping table — one row per sensor, skip None
+  const rows = document.querySelectorAll('#mapping-tbody tr');
+  const mappings = Array.from(rows).map(row => {
+    const zoneSelect = row.querySelector('select[data-f="zone_id"]');
+    const commentInput = row.querySelector('input[data-f="comment"]');
+    const eui = zoneSelect ? zoneSelect.dataset.eui : '';
+    const zone_id = zoneSelect ? zoneSelect.value.trim() : '';
+    const comment = commentInput ? commentInput.value.trim() : '';
+    return { eui, zone_id, comment };
+  }).filter(m => m.eui && m.zone_id); // skip rows with None
+
+  // Save server config
+  const serverPayload = {
+    rachio_api_key: document.getElementById('s-rachio-key').value,
+    sensecraft_api_id: document.getElementById('s-sc-id').value,
+    sensecraft_api_secret: document.getElementById('s-sc-secret').value,
+    zip_code: document.getElementById('s-zip').value.trim(),
+    sensor_mappings: mappings,
+  };
+  try {
+    await fetch('/api/config', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(serverPayload) });
+    document.getElementById('save-note').classList.add('visible');
+  } catch(e) { console.error('Failed to save server config', e); }
+
+  if (lastData) renderDashboard(lastData);
+}
 const ZONE_ICONS = {
   'lawn': '🌿', 'grass': '🌿', 'front': '🌿',
   'citrus': '🍊', 'orange': '🍊', 'lemon': '🍋',
@@ -237,7 +489,7 @@ function zoneIcon(name) {
 
 function mc(p) {
   if (p === null || p === undefined) return '#888';
-  return p < 20 ? '#ef5350' : p < 25 ? '#ffca28' : p > 40 ? '#42a5f5' : '#66bb6a';
+  return p < CFG.mdry ? '#ef5350' : p < CFG.mlow ? '#ffca28' : p > CFG.mwet ? '#42a5f5' : '#66bb6a';
 }
 
 function arc(p, r) {
@@ -300,12 +552,12 @@ function tile(z) {
     <div class="tile-c">
       <div class="zname">${icon} ${z.name}</div>
       <div class="tile-mid">
-        ${gaugeSVG(moisture, color, 260)}
+        ${gaugeSVG(moisture, color, 264)}
       </div>
       <div class="tile-bot">
         <div class="ring-row">
-          ${ringSVG(p1, fm(z.runtime1d) + '/day', 'day', 140)}
-          ${ringSVG(p7, fm(z.runtime7d) + '/wk', 'wk', 140)}
+          ${ringSVG(p1, fm(z.runtime1d) + '/day', 'day', 120)}
+          ${ringSVG(p7, fm(z.runtime7d) + '/wk', 'wk', 120)}
         </div>
         <div class="sensor-row">
           ${sensors.map(s => `<div class="sc"><div class="sd" style="background:${s.color || '#888'}"></div>${s.id} ${s.moisture !== null ? s.moisture.toFixed(0) : '--'}%</div>`).join('')}
@@ -430,37 +682,97 @@ function wxPartlyCloudySVG() {
 function alertsPanel(data) {
   const w = data.weather || {};
   const cur = w.current || {};
-  const today = (w.forecast || [])[0] || {};
+  const forecast = w.forecast || [];
+  const today = forecast[0] || {};
   const updatedTime = formatUpdatedTime(data.updatedAt);
-  const temp    = cur.temp     !== undefined ? cur.temp     : '--';
-  const hi      = today.high   !== undefined ? today.high   : '--';
-  const lo      = today.low    !== undefined ? today.low    : '--';
+  const temp    = cur.temp     !== undefined ? cur.temp     : null;
+  const hi      = today.high   !== undefined ? today.high   : null;
+  const lo      = today.low    !== undefined ? today.low    : null;
   const desc    = cur.description || '';
   const humidity= cur.humidity !== undefined ? cur.humidity : '--';
   const wind    = cur.wind     !== undefined ? cur.wind     : '--';
   const d       = desc.toLowerCase();
   const isPartly= d.includes('partly') || d.includes('mainly clear') || d.includes('mostly clear');
 
+  // Horizontal gauge marker position (lo=left, hi=right)
+  let markerPct = 0.5;
+  if (temp !== null && hi !== null && lo !== null && hi > lo) {
+    markerPct = (temp - lo) / (hi - lo);
+    markerPct = Math.max(0.04, Math.min(0.96, markerPct));
+  }
+
+  // Forecast strip — up to 4 days
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const condIcon = s => {
+    const t = (s||'').toLowerCase();
+    if (t.includes('thunder') || t.includes('storm')) return '⛈';
+    if (t.includes('rain') || t.includes('shower') || t.includes('drizzle')) return '🌧';
+    if (t.includes('snow')) return '❄️';
+    if (t.includes('fog') || t.includes('mist')) return '🌫';
+    if (t.includes('overcast')) return '☁️';
+    if (t.includes('cloud') || t.includes('partly')) return '🌤';
+    if (t.includes('night') || t.includes('clear') && new Date().getHours() >= 20) return '🌙';
+    return '☀️';
+  };
+  const fcDays = forecast.slice(0, 4).map((f, i) => {
+    const dt = new Date(); dt.setDate(dt.getDate() + i);
+    const label = i === 0 ? 'Today' : days[dt.getDay()];
+    const icon = condIcon(f.description || f.condition || '');
+    return `<div style="flex:1;text-align:center;padding:8px 4px;background:rgba(255,255,255,0.08);border-radius:10px">
+      <div style="font-size:13px;font-weight:700;opacity:0.65;text-transform:uppercase;letter-spacing:0.5px">${label}</div>
+      <div style="font-size:28px;margin:5px 0">${icon}</div>
+      <div style="font-size:16px"><span style="font-weight:800">${f.high !== undefined ? f.high+'°' : '--'}</span> <span style="opacity:0.6">${f.low !== undefined ? f.low+'°' : '--'}</span></div>
+    </div>`;
+  }).join('');
+
   return `<div class="alerts-panel wx-tile">
     ${wxSkyLayers(desc, cur.temp)}
     ${isPartly ? wxPartlyCloudySVG() : ''}
-    <div class="sky-ov">
-      <div class="wx-top">
-        <div class="wx-date-label">Today · Phoenix</div>
-        <div class="wx-desc-label">${desc}</div>
+    <div class="sky-ov" style="flex-direction:column;justify-content:space-between">
+
+      <!-- Top row: condition + big temp -->
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div class="wx-date-label" id="wx-datetime">Phoenix</div>
+          <div class="wx-desc-label">${desc}</div>
+        </div>
+        <div style="font-size:80px;font-weight:900;line-height:1;letter-spacing:-4px;text-shadow:0 4px 32px rgba(0,0,0,0.4);text-align:right">${temp !== null ? temp : '--'}<span style="font-size:34px;font-weight:300;vertical-align:super">°</span></div>
       </div>
+
+      <!-- Horizontal temp gauge -->
       <div>
-        <span class="wx-big-temp">${temp}</span><span class="wx-deg">°</span>
+        <svg width="100%" height="32" style="display:block;overflow:visible">
+          <defs>
+            <linearGradient id="tg" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#4fc3f7"/>
+              <stop offset="50%" stop-color="#66bb6a"/>
+              <stop offset="100%" stop-color="#ef5350"/>
+            </linearGradient>
+          </defs>
+          <rect x="0" y="8" width="100%" height="16" rx="8" fill="rgba(255,255,255,0.15)"/>
+          <rect x="0" y="8" width="100%" height="16" rx="8" fill="url(#tg)" opacity="0.88"/>
+          <circle cx="${(markerPct*100).toFixed(1)}%" cy="16" r="12" fill="white" opacity="0.95"/>
+          <text x="${(markerPct*100).toFixed(1)}%" y="21" fill="#1a2a3a" font-size="11" font-weight="900" font-family="Inter,sans-serif" text-anchor="middle">${temp !== null ? temp+'°' : '--'}</text>
+        </svg>
+        <div style="display:flex;justify-content:space-between;font-size:16px;font-weight:700;margin-top:5px;padding:0 2px">
+          <span style="color:rgba(200,235,255,1)">▼ ${lo !== null ? lo+'°' : '--'}</span>
+          <span style="color:rgba(255,210,140,1)">▲ ${hi !== null ? hi+'°' : '--'}</span>
+        </div>
       </div>
+
+      <!-- Forecast strip -->
+      <div style="display:flex;gap:6px">${fcDays}</div>
+
+      <!-- Stats + updated -->
       <div>
-        <div class="wx-hilo"><span class="wx-hi">▲ ${hi}°</span><span class="wx-lo">▼ ${lo}°</span></div>
-        <div class="wx-stats">
+        <div class="wx-stats" style="margin-bottom:8px">
           <div class="wx-stat"><div class="wx-stat-val">${humidity}%</div><div class="wx-stat-lbl">Humidity</div></div>
           <div class="wx-stat-div"></div>
           <div class="wx-stat"><div class="wx-stat-val">${wind}</div><div class="wx-stat-lbl">mph Wind</div></div>
         </div>
         <div class="ap-updated" id="upd" style="color:rgba(255,255,255,0.45)">${updatedTime}</div>
       </div>
+
     </div>
   </div>`;
 }
@@ -567,7 +879,14 @@ setInterval(fetchAndRender, 30000);
 
 // Clock updates every 1 second independently
 !function t() {
-  document.getElementById('clk').textContent = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  const now = new Date();
+  const time = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  document.getElementById('clk').textContent = time;
+  const wxdt = document.getElementById('wx-datetime');
+  if (wxdt) {
+    const date = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    wxdt.textContent = `${date} · ${time}`;
+  }
   setTimeout(t, 1e3);
 }();
 </script>

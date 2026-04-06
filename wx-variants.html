@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Weather Tile Variants</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #080a10;
+    color: #f0f2f5;
+    padding: 32px;
+  }
+  h1 { font-size: 18px; font-weight: 700; color: #4fc3f7; margin-bottom: 28px; letter-spacing: 1px; text-transform: uppercase; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+  }
+  .variant { display: flex; flex-direction: column; gap: 10px; }
+  .label { font-size: 12px; font-weight: 700; color: #9ba0b4; text-transform: uppercase; letter-spacing: 1px; }
+  .tile {
+    width: 100%;
+    aspect-ratio: 480 / 506;
+    border-radius: 16px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid rgba(255,255,255,0.06);
+    color: #fff;
+  }
+
+  /* Sky background - overcast */
+  .sky {
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg,#2c3444 0%,#3d4b5c 20%,#506070 45%,#6a7e8c 70%,#8898a6 90%,#a0b0bc 100%);
+  }
+  .sky-overlay {
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 30% 55%, rgba(8,10,16,0.45) 0%, rgba(8,10,16,0.72) 100%);
+  }
+  .content { position: relative; z-index: 1; height: 100%; padding: 22px 24px; }
+
+  /* Shared elements */
+  .date-label { font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; opacity: 0.65; }
+  .desc-label { font-size: 15px; font-weight: 500; opacity: 0.9; margin-top: 2px; }
+  .stats-bar {
+    display: flex; align-items: center;
+    background: rgba(0,0,0,0.28); backdrop-filter: blur(6px);
+    border-radius: 12px; padding: 10px 0;
+  }
+  .stat { flex:1; text-align:center; }
+  .stat-val { font-size: 20px; font-weight: 800; }
+  .stat-lbl { font-size: 9px; font-weight: 600; opacity: 0.6; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+  .stat-div { width:1px; background:rgba(255,255,255,0.18); align-self:stretch; }
+  .updated { font-size: 10px; color: rgba(255,255,255,0.4); text-align: center; margin-top: 8px; }
+
+  /* Forecast strip */
+  .fc-strip { display: flex; gap: 4px; }
+  .fc-day { flex:1; text-align:center; padding: 6px 2px; background: rgba(255,255,255,0.08); border-radius: 8px; }
+  .fc-day .fd { font-size: 9px; font-weight: 700; opacity: 0.6; text-transform: uppercase; }
+  .fc-day .fi { font-size: 16px; margin: 3px 0; }
+  .fc-day .ft { font-size: 10px; }
+  .fc-day .fh { font-weight: 700; }
+  .fc-day .fl-t { opacity: 0.65; }
+</style>
+</head>
+<body>
+<h1>Weather Tile — 7 Variants</h1>
+<div class="grid">
+
+  <!-- V1: Current (baseline) -->
+  <div class="variant">
+    <div class="label">1 · Current</div>
+    <div class="tile">
+      <div class="sky"></div><div class="sky-overlay"></div>
+      <div class="content" style="display:flex;flex-direction:row;align-items:center;gap:20px">
+        <!-- Gauge left -->
+        <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0">
+          <div style="font-size:13px;font-weight:800;color:rgba(255,210,140,1);margin-bottom:6px">95°</div>
+          <svg width="118" height="240">
+            <defs>
+              <linearGradient id="tg1" x1="0" y1="1" x2="0" y2="0">
+                <stop offset="0%" stop-color="#4fc3f7"/>
+                <stop offset="55%" stop-color="#66bb6a"/>
+                <stop offset="100%" stop-color="#ef5350"/>
+              </linearGradient>
+            </defs>
+            <rect x="4" y="0" width="26" height="240" rx="13" fill="rgba(255,255,255,0.15)"/>
+            <rect x="4" y="0" width="26" height="240" rx="13" fill="url(#tg1)" opacity="0.9"/>
+            <!-- marker at ~58% from top (83 is 58% of way from 66 to 95) -->
+            <line x1="0" y1="139" x2="34" y2="139" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+            <circle cx="17" cy="139" r="8" fill="white" opacity="0.95"/>
+            <text x="44" y="146" fill="white" font-size="20" font-weight="800" font-family="Inter,sans-serif">83°</text>
+          </svg>
+          <div style="font-size:13px;font-weight:800;color:rgba(200,235,255,1);margin-top:6px">66°</div>
+        </div>
+        <!-- Right -->
+        <div style="flex:1;display:flex;flex-direction:column;justify-content:space-between;height:100%">
+          <div><div class="date-label">Today · Phoenix</div><div class="desc-label">Overcast</div></div>
+          <div style="font-size:72px;font-weight:900;line-height:1;letter-spacing:-3px;text-shadow:0 4px 24px rgba(0,0,0,0.4)">83<span style="font-size:32px;font-weight:300;vertical-align:super">°</span></div>
+          <div>
+            <div class="stats-bar" style="margin-bottom:8px">
+              <div class="stat"><div class="stat-val">11%</div><div class="stat-lbl">Humidity</div></div>
+              <div class="stat-div"></div>
+              <div class="stat"><div class="stat-val">4</div><div class="stat-lbl">mph Wind</div></div>
+            </div>
+            <div class="updated">Updated 20m ago</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- V2: Gauge right, info left -->
+  <div class="variant">
+    <div class="label">2 · Gauge Right</div>
+    <div class="tile">
+      <div class="sky"></div><div class="sky-overlay"></div>
+      <div class="content" style="display:flex;flex-direction:row;align-items:center;gap:20px">
+        <!-- Left info -->
+        <div style="flex:1;display:flex;flex-direction:column;justify-content:space-between;height:100%">
+          <div><div class="date-label">Today · Phoenix</div><div class="desc-label">Overcast</div></div>
+          <div style="font-size:72px;font-weight:900;line-height:1;letter-spacing:-3px;text-shadow:0 4px 24px rgba(0,0,0,0.4)">83<span style="font-size:32px;font-weight:300;vertical-align:super">°</span></div>
+          <div>
+            <div class="stats-bar" style="margin-bottom:8px">
+              <div class="stat"><div class="stat-val">11%</div><div class="stat-lbl">Humidity</div></div>
+              <div class="stat-div"></div>
+              <div class="stat"><div class="stat-val">4</div><div class="stat-lbl">mph Wind</div></div>
+            </div>
+            <div class="updated">Updated 20m ago</div>
+          </div>
+        </div>
+        <!-- Gauge right -->
+        <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0">
+          <div style="font-size:13px;font-weight:800;color:rgba(255,210,140,1);margin-bottom:6px">95°</div>
+          <svg width="118" height="240">
+            <defs><linearGradient id="tg2" x1="0" y1="1" x2="0" y2="0"><stop offset="0%" stop-color="#4fc3f7"/><stop offset="55%" stop-color="#66bb6a"/><stop offset="100%" stop-color="#ef5350"/></linearGradient></defs>
+            <rect x="4" y="0" width="26" height="240" rx="13" fill="rgba(255,255,255,0.15)"/>
+            <rect x="4" y="0" width="26" height="240" rx="13" fill="url(#tg2)" opacity="0.9"/>
+            <line x1="0" y1="139" x2="34" y2="139" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+            <circle cx="17" cy="139" r="8" fill="white" opacity="0.95"/>
+            <text x="44" y="146" fill="white" font-size="20" font-weight="800" font-family="Inter,sans-serif">83°</text>
+          </svg>
+          <div style="font-size:13px;font-weight:800;color:rgba(200,235,255,1);margin-top:6px">66°</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- V3: Tall gauge, no duplicate temp, 3-day forecast -->
+  <div class="variant">
+    <div class="label">3 · Tall Gauge + Forecast</div>
+    <div class="tile">
+      <div class="sky"></div><div class="sky-overlay"></div>
+      <div class="content" style="display:flex;flex-direction:row;align-items:center;gap:18px">
+        <!-- Tall gauge -->
+        <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0">
+          <div style="font-size:13px;font-weight:800;color:rgba(255,210,140,1);margin-bottom:6px">95°</div>
+          <svg width="50" height="310">
+            <defs><linearGradient id="tg3" x1="0" y1="1" x2="0" y2="0"><stop offset="0%" stop-color="#4fc3f7"/><stop offset="55%" stop-color="#66bb6a"/><stop offset="100%" stop-color="#ef5350"/></linearGradient></defs>
+            <rect x="10" y="0" width="30" height="310" rx="15" fill="rgba(255,255,255,0.15)"/>
+            <rect x="10" y="0" width="30" height="310" rx="15" fill="url(#tg3)" opacity="0.9"/>
+            <line x1="4" y1="180" x2="46" y2="180" stroke="white" stroke-width="3" stroke-linecap="round"/>
+            <circle cx="25" cy="180" r="10" fill="white" opacity="0.95"/>
+            <text x="8" y="174" fill="white" font-size="13" font-weight="800" font-family="Inter,sans-serif" text-anchor="middle">83°</text>
+          </svg>
+          <div style="font-size:13px;font-weight:800;color:rgba(200,235,255,1);margin-top:6px">66°</div>
+        </div>
+        <!-- Right: info + forecast -->
+        <div style="flex:1;display:flex;flex-direction:column;justify-content:space-between;height:100%">
+          <div><div class="date-label">Today · Phoenix</div><div class="desc-label">Overcast</div></div>
+          <div style="font-size:64px;font-weight:900;line-height:1;letter-spacing:-3px;text-shadow:0 4px 24px rgba(0,0,0,0.4)">83<span style="font-size:28px;font-weight:300;vertical-align:super">°</span></div>
+          <div class="fc-strip">
+            <div class="fc-day"><div class="fd">Mon</div><div class="fi">🌤</div><div class="ft"><span class="fh">97°</span> <span class="fl-t">68°</span></div></div>
+            <div class="fc-day"><div class="fd">Tue</div><div class="fi">☀️</div><div class="ft"><span class="fh">99°</span> <span class="fl-t">70°</span></div></div>
+            <div class="fc-day"><div class="fd">Wed</div><div class="fi">🌧</div><div class="ft"><span class="fh">88°</span> <span class="fl-t">64°</span></div></div>
+          </div>
+          <div>
+            <div class="stats-bar" style="margin-bottom:6px">
+              <div class="stat"><div class="stat-val">11%</div><div class="stat-lbl">Humidity</div></div>
+              <div class="stat-div"></div>
+              <div class="stat"><div class="stat-val">4</div><div class="stat-lbl">mph Wind</div></div>
+            </div>
+            <div class="updated">Updated 20m ago</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- V4: Thermometer with tick marks -->
+  <div class="variant">
+    <div class="label">4 · Thermometer + Ticks</div>
+    <div class="tile">
+      <div class="sky"></div><div class="sky-overlay"></div>
+      <div class="content" style="display:flex;flex-direction:row;align-items:center;gap:16px">
+        <!-- Gauge with ticks -->
+        <div style="display:flex;flex-direction:column;align-items:flex-start;flex-shrink:0;padding-top:8px;padding-bottom:8px">
+          <div style="font-size:12px;font-weight:800;color:rgba(255,210,140,1);margin-bottom:4px;margin-left:18px">95°</div>
+          <svg width="120" height="280">
+            <defs><linearGradient id="tg4" x1="0" y1="1" x2="0" y2="0"><stop offset="0%" stop-color="#4fc3f7"/><stop offset="55%" stop-color="#66bb6a"/><stop offset="100%" stop-color="#ef5350"/></linearGradient></defs>
+            <rect x="4" y="0" width="26" height="280" rx="13" fill="rgba(255,255,255,0.15)"/>
+            <rect x="4" y="0" width="26" height="280" rx="13" fill="url(#tg4)" opacity="0.9"/>
+            <!-- Tick marks every ~9.6px = 10° across 280px for 29° range -->
+            <!-- Ticks at 70°,80°,90° -->
+            <line x1="0" y1="207" x2="8" y2="207" stroke="white" stroke-width="1.5" opacity="0.7"/>
+            <text x="36" y="212" fill="white" font-size="9" opacity="0.6" font-family="Inter,sans-serif">70°</text>
+            <line x1="0" y1="138" x2="8" y2="138" stroke="white" stroke-width="1.5" opacity="0.7"/>
+            <text x="36" y="143" fill="white" font-size="9" opacity="0.6" font-family="Inter,sans-serif">80°</text>
+            <line x1="0" y1="69" x2="8" y2="69" stroke="white" stroke-width="1.5" opacity="0.7"/>
+            <text x="36" y="74" fill="white" font-size="9" opacity="0.6" font-family="Inter,sans-serif">90°</text>
+            <!-- Current marker -->
+            <line x1="0" y1="162" x2="34" y2="162" stroke="white" stroke-width="3" stroke-linecap="round"/>
+            <circle cx="17" cy="162" r="9" fill="white" opacity="0.95"/>
+            <text x="36" y="150" fill="white" font-size="19" font-weight="800" font-family="Inter,sans-serif">83°</text>
+          </svg>
+          <div style="font-size:12px;font-weight:800;color:rgba(200,235,255,1);margin-top:4px;margin-left:18px">66°</div>
+        </div>
+        <!-- Right -->
+        <div style="flex:1;display:flex;flex-direction:column;justify-content:space-between;height:100%">
+          <div><div class="date-label">Today · Phoenix</div><div class="desc-label">Overcast</div></div>
+          <div style="font-size:68px;font-weight:900;line-height:1;letter-spacing:-3px;text-shadow:0 4px 24px rgba(0,0,0,0.4)">83<span style="font-size:30px;font-weight:300;vertical-align:super">°</span></div>
+          <div>
+            <div class="stats-bar" style="margin-bottom:8px">
+              <div class="stat"><div class="stat-val">11%</div><div class="stat-lbl">Humidity</div></div>
+              <div class="stat-div"></div>
+              <div class="stat"><div class="stat-val">4</div><div class="stat-lbl">mph Wind</div></div>
+            </div>
+            <div class="updated">Updated 20m ago</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- V5: Centered large gauge, temp inside, forecast below -->
+  <div class="variant">
+    <div class="label">5 · Center Gauge + Forecast</div>
+    <div class="tile">
+      <div class="sky"></div><div class="sky-overlay"></div>
+      <div class="content" style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div><div class="date-label">Today · Phoenix</div><div class="desc-label">Overcast</div></div>
+          <div style="font-size:36px;font-weight:900;letter-spacing:-2px">83<span style="font-size:18px;font-weight:300;vertical-align:super">°</span></div>
+        </div>
+        <!-- Horizontal gauge -->
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <svg width="100%" height="36" style="display:block">
+            <defs><linearGradient id="tg5" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#4fc3f7"/><stop offset="55%" stop-color="#66bb6a"/><stop offset="100%" stop-color="#ef5350"/></linearGradient></defs>
+            <rect x="0" y="8" width="100%" height="20" rx="10" fill="rgba(255,255,255,0.15)"/>
+            <rect x="0" y="8" width="100%" height="20" rx="10" fill="url(#tg5)" opacity="0.9"/>
+            <!-- marker at 58% from left -->
+            <circle cx="58%" cy="18" r="12" fill="white" opacity="0.95"/>
+            <text x="58%" y="23" fill="#1a2a3a" font-size="11" font-weight="900" font-family="Inter,sans-serif" text-anchor="middle">83°</text>
+          </svg>
+          <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;padding:0 2px">
+            <span style="color:rgba(200,235,255,1)">66° Lo</span>
+            <span style="color:rgba(255,210,140,1)">95° Hi</span>
+          </div>
+        </div>
+        <!-- 3-day forecast -->
+        <div class="fc-strip" style="flex:1;align-items:stretch">
+          <div class="fc-day" style="display:flex;flex-direction:column;justify-content:center;padding:8px 4px">
+            <div class="fd">Mon</div><div class="fi">🌤</div>
+            <div class="ft"><span class="fh">97°</span> <span class="fl-t">68°</span></div>
+          </div>
+          <div class="fc-day" style="display:flex;flex-direction:column;justify-content:center;padding:8px 4px">
+            <div class="fd">Tue</div><div class="fi">☀️</div>
+            <div class="ft"><span class="fh">99°</span> <span class="fl-t">70°</span></div>
+          </div>
+          <div class="fc-day" style="display:flex;flex-direction:column;justify-content:center;padding:8px 4px">
+            <div class="fd">Wed</div><div class="fi">🌧</div>
+            <div class="ft"><span class="fh">88°</span> <span class="fl-t">64°</span></div>
+          </div>
+          <div class="fc-day" style="display:flex;flex-direction:column;justify-content:center;padding:8px 4px">
+            <div class="fd">Thu</div><div class="fi">🌤</div>
+            <div class="ft"><span class="fh">94°</span> <span class="fl-t">67°</span></div>
+          </div>
+        </div>
+        <div>
+          <div class="stats-bar" style="margin-bottom:6px">
+            <div class="stat"><div class="stat-val">11%</div><div class="stat-lbl">Humidity</div></div>
+            <div class="stat-div"></div>
+            <div class="stat"><div class="stat-val">4</div><div class="stat-lbl">mph Wind</div></div>
+          </div>
+          <div class="updated">Updated 20m ago</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- V6: Minimal — gauge dominates, everything else small -->
+  <div class="variant">
+    <div class="label">6 · Gauge Dominant</div>
+    <div class="tile">
+      <div class="sky"></div><div class="sky-overlay"></div>
+      <div class="content" style="display:flex;flex-direction:row;align-items:center;gap:16px">
+        <!-- Very wide tall gauge -->
+        <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0">
+          <div style="font-size:14px;font-weight:800;color:rgba(255,210,140,1);margin-bottom:6px">95°</div>
+          <svg width="70" height="330">
+            <defs><linearGradient id="tg6" x1="0" y1="1" x2="0" y2="0"><stop offset="0%" stop-color="#4fc3f7"/><stop offset="55%" stop-color="#66bb6a"/><stop offset="100%" stop-color="#ef5350"/></linearGradient></defs>
+            <rect x="5" y="0" width="46" height="330" rx="23" fill="rgba(255,255,255,0.15)"/>
+            <rect x="5" y="0" width="46" height="330" rx="23" fill="url(#tg6)" opacity="0.9"/>
+            <line x1="0" y1="191" x2="55" y2="191" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
+            <circle cx="28" cy="191" r="13" fill="white" opacity="0.95"/>
+            <text x="28" y="196" fill="#1a2a3a" font-size="13" font-weight="900" font-family="Inter,sans-serif" text-anchor="middle">83°</text>
+          </svg>
+          <div style="font-size:14px;font-weight:800;color:rgba(200,235,255,1);margin-top:6px">66°</div>
+        </div>
+        <!-- Compact right panel -->
+        <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:16px">
+          <div><div class="date-label">Today · Phoenix</div><div class="desc-label">Overcast</div></div>
+          <div style="font-size:56px;font-weight:900;line-height:1;letter-spacing:-2px;text-shadow:0 4px 24px rgba(0,0,0,0.4)">83<span style="font-size:26px;font-weight:300;vertical-align:super">°</span></div>
+          <div>
+            <div style="font-size:13px;color:rgba(255,255,255,0.7)">💧 11% &nbsp;&nbsp; 💨 4 mph</div>
+            <div class="updated" style="text-align:left;margin-top:6px">Updated 20m ago</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- V7: Split — top sky scene, bottom data bar -->
+  <div class="variant">
+    <div class="label">7 · Sky Top / Data Bottom</div>
+    <div class="tile">
+      <div class="sky"></div>
+      <!-- Top half: big temp + gauge -->
+      <div style="position:relative;z-index:1;height:55%;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:20px;padding:16px 20px;background:rgba(8,10,16,0.3)">
+        <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0">
+          <div style="font-size:11px;font-weight:800;color:rgba(255,210,140,1);margin-bottom:4px">95°</div>
+          <svg width="100" height="160">
+            <defs><linearGradient id="tg7" x1="0" y1="1" x2="0" y2="0"><stop offset="0%" stop-color="#4fc3f7"/><stop offset="55%" stop-color="#66bb6a"/><stop offset="100%" stop-color="#ef5350"/></linearGradient></defs>
+            <rect x="4" y="0" width="22" height="160" rx="11" fill="rgba(255,255,255,0.15)"/>
+            <rect x="4" y="0" width="22" height="160" rx="11" fill="url(#tg7)" opacity="0.9"/>
+            <line x1="0" y1="93" x2="30" y2="93" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+            <circle cx="15" cy="93" r="7" fill="white" opacity="0.95"/>
+            <text x="38" y="100" fill="white" font-size="17" font-weight="800" font-family="Inter,sans-serif">83°</text>
+          </svg>
+          <div style="font-size:11px;font-weight:800;color:rgba(200,235,255,1);margin-top:4px">66°</div>
+        </div>
+        <div>
+          <div class="date-label" style="margin-bottom:4px">Today · Phoenix</div>
+          <div style="font-size:64px;font-weight:900;line-height:1;letter-spacing:-3px;text-shadow:0 4px 24px rgba(0,0,0,0.5)">83<span style="font-size:28px;font-weight:300;vertical-align:super">°</span></div>
+          <div style="font-size:14px;opacity:0.85;margin-top:4px">Overcast</div>
+        </div>
+      </div>
+      <!-- Bottom half: dark panel with forecast + stats -->
+      <div style="position:relative;z-index:1;height:45%;background:rgba(8,10,16,0.82);padding:12px 16px;display:flex;flex-direction:column;gap:8px;border-top:1px solid rgba(255,255,255,0.08)">
+        <div class="fc-strip">
+          <div class="fc-day"><div class="fd">Mon</div><div class="fi" style="font-size:14px">🌤</div><div class="ft" style="font-size:9px"><span class="fh">97°</span> <span class="fl-t">68°</span></div></div>
+          <div class="fc-day"><div class="fd">Tue</div><div class="fi" style="font-size:14px">☀️</div><div class="ft" style="font-size:9px"><span class="fh">99°</span> <span class="fl-t">70°</span></div></div>
+          <div class="fc-day"><div class="fd">Wed</div><div class="fi" style="font-size:14px">🌧</div><div class="ft" style="font-size:9px"><span class="fh">88°</span> <span class="fl-t">64°</span></div></div>
+          <div class="fc-day"><div class="fd">Thu</div><div class="fi" style="font-size:14px">🌤</div><div class="ft" style="font-size:9px"><span class="fh">94°</span> <span class="fl-t">67°</span></div></div>
+        </div>
+        <div class="stats-bar">
+          <div class="stat"><div class="stat-val" style="font-size:17px">11%</div><div class="stat-lbl">Humidity</div></div>
+          <div class="stat-div"></div>
+          <div class="stat"><div class="stat-val" style="font-size:17px">4</div><div class="stat-lbl">mph Wind</div></div>
+        </div>
+        <div class="updated">Updated 20m ago</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
