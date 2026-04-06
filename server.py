@@ -727,15 +727,26 @@ def aggregate_all_data():
         }
 
 # ── Background refresh thread ──
+RETRY_INTERVAL = 60  # seconds to wait before retrying after a failed/empty fetch
+
 def background_refresh():
     global dashboard_data
     while True:
-        time.sleep(REFRESH_INTERVAL)
+        # If zones are empty (API failure/rate limit), retry sooner
+        with data_lock:
+            has_zones = bool(dashboard_data.get('zones'))
+        sleep_time = RETRY_INTERVAL if not has_zones else REFRESH_INTERVAL
+        if not has_zones:
+            logger.info(f'No zone data — retrying in {RETRY_INTERVAL}s')
+        time.sleep(sleep_time)
         try:
             new_data = aggregate_all_data()
             with data_lock:
                 dashboard_data = new_data
-            logger.info('Background refresh complete')
+            if new_data.get('zones'):
+                logger.info(f'Background refresh complete — {len(new_data["zones"])} zones')
+            else:
+                logger.warning('Background refresh complete — still no zones')
         except Exception as e:
             logger.error(f'Background refresh error: {e}')
 
