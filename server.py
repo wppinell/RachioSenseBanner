@@ -151,8 +151,8 @@ class RachioAPI:
         self.api_key = api_key
         self.session = create_session_with_retries()
         self.device_name = None
-        self.api_remaining = None
-        # Hydrate identifiers and rate-limit deadline from disk-backed state
+        # Hydrate identifiers, api_remaining, and rate-limit deadline from disk-backed state
+        self.api_remaining = _rachio_state.get('api_remaining')
         self.person_id = _rachio_state.get('person_id')
         self._device_ids_cached = _rachio_state.get('device_ids') or []
         rl = _rachio_state.get('rate_limited_until')
@@ -172,9 +172,10 @@ class RachioAPI:
         }
 
     def _persist_state(self):
-        """Save identifiers + rate-limit deadline to disk for restart survival."""
+        """Save identifiers, api_remaining, and rate-limit deadline to disk for restart survival."""
         _rachio_state['person_id'] = self.person_id
         _rachio_state['device_ids'] = self._device_ids_cached
+        _rachio_state['api_remaining'] = self.api_remaining
         _rachio_state['rate_limited_until'] = (
             self.rate_limited_until.isoformat() if self.rate_limited_until else None
         )
@@ -183,7 +184,12 @@ class RachioAPI:
     def _handle_rate_limit(self, response):
         remaining = response.headers.get('X-RateLimit-Remaining')
         if remaining:
-            self.api_remaining = int(remaining)
+            try:
+                self.api_remaining = int(remaining)
+                _rachio_state['api_remaining'] = self.api_remaining
+                _save_rachio_state(_rachio_state)
+            except ValueError:
+                pass
         if response.status_code == 429:
             reset = response.headers.get('X-RateLimit-Reset')
             if reset:

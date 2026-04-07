@@ -835,8 +835,10 @@ function updateHeader(data) {
 
   const rachio = services.rachio || {};
   const rachioDot = rachio.connected ? 'dot' : 'dot offline';
-  const rachioCounts = rachio.apiRemaining !== undefined ? rachio.apiRemaining : '--';
-  document.getElementById('svc-rachio').innerHTML = `<span class="${rachioDot}"></span>Rachio ${rachioCounts}`;
+  const rachioCounts = (rachio.apiRemaining !== undefined && rachio.apiRemaining !== null)
+    ? `${rachio.apiRemaining} left`
+    : '--';
+  document.getElementById('svc-rachio').innerHTML = `<span class="${rachioDot}"></span>Rachio · ${rachioCounts}`;
 }
 
 function renderDashboard(data) {
