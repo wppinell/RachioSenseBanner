@@ -396,11 +396,18 @@ def parse_watering_events(raw_events):
         if ' completed watering' not in summary:
             continue
         zone_name = summary.split(' completed watering')[0].strip()
-        # Parse "for X minutes" or "for X minute" from summary
-        m = re.search(r'for (\d+) minute', summary)
-        if not m:
+        # Parse duration from summary — Rachio uses several formats:
+        #   "for 45 minutes"
+        #   "for 1 hour"
+        #   "for 1 hour 30 minutes"
+        hours_m = re.search(r'for (\d+) hour', summary)
+        mins_m  = re.search(r'for (?:\d+ hour[s]? )?(\d+) minute', summary)
+        hours = int(hours_m.group(1)) if hours_m else 0
+        mins  = int(mins_m.group(1))  if mins_m  else 0
+        duration_sec = hours * 3600 + mins * 60
+        if not hours_m and not mins_m:
+            logger.warning(f'Could not parse duration from summary: {summary!r}')
             continue
-        duration_sec = int(m.group(1)) * 60
         if duration_sec < 300:  # skip runs under 5 minutes
             continue
         # Use completion time minus duration as approximate start time
