@@ -272,7 +272,12 @@ class SenseCraftAPI:
             return []
 
     def get_latest_telemetry(self, eui):
-        """GET /view_latest_telemetry_data?device_eui={eui} → latest moisture + temp reading."""
+        """GET /view_latest_telemetry_data?device_eui={eui} → latest moisture + temp reading.
+
+        Falls back to last known reading if the API is rate-limited or unreachable,
+        so moisture values remain visible on the dashboard during SenseCraft outages.
+        """
+        global _last_good_telemetry
         cached = cache.get(f'sensecraft_{eui}')
         if cached is not None:
             return cached
@@ -288,12 +293,17 @@ class SenseCraftAPI:
             if data.get('code') == '0':
                 result = data.get('data', [])
                 cache.set(f'sensecraft_{eui}', result, CACHE_TTL_SENSORS)
+                _last_good_telemetry[eui] = result  # save for stale fallback
                 return result
             logger.warning(f'SenseCraft telemetry {eui} code: {data.get("code")} msg: {data.get("msg")}')
-            return []
         except Exception as e:
             logger.error(f'SenseCraft telemetry for {eui} failed: {e}')
-            return []
+
+        # Fall back to last known reading rather than returning nothing
+        if eui in _last_good_telemetry:
+            logger.warning(f'SenseCraft {eui[-4:]} — using stale telemetry')
+            return _last_good_telemetry[eui]
+        return []
 
 # ── WeatherAPI ──
 class WeatherAPI:
@@ -373,48 +383,34 @@ def moisture_status(pct, thresholds=None):
 def parse_watering_events(raw_events):
     """Parse raw Rachio events into structured watering events.
 
-    Events have: type, subType, eventDate (epoch ms), summary.
-    summary format: "Zone Name began watering..." or "Zone Name completed watering..."
+    Uses ZONE_COMPLETED events only — duration is read directly from the
+    summary string, e.g. "Backyard gndcover completed watering at 10:20 AM for 20 minutes."
+    No start/complete pairing needed, so no bogus durations possible.
     """
-    zone_events = []
+    import re
+    watering_events = []
     for ev in raw_events:
-        if ev.get('type') != 'ZONE_STATUS':
-            continue
-        sub = ev.get('subType', '')
-        if sub not in ('ZONE_STARTED', 'ZONE_COMPLETED'):
+        if ev.get('type') != 'ZONE_STATUS' or ev.get('subType') != 'ZONE_COMPLETED':
             continue
         summary = ev.get('summary', '')
-        # Extract zone name: text before "began", "started", "completed", "finished"
-        zone_name = summary
-        for sep in [' began ', ' started ', ' completed ', ' finished ']:
-            if sep in summary:
-                zone_name = summary.split(sep)[0].strip()
-                break
-        zone_events.append({
+        if ' completed watering' not in summary:
+            continue
+        zone_name = summary.split(' completed watering')[0].strip()
+        # Parse "for X minutes" or "for X minute" from summary
+        m = re.search(r'for (\d+) minute', summary)
+        if not m:
+            continue
+        duration_sec = int(m.group(1)) * 60
+        if duration_sec < 300:  # skip runs under 5 minutes
+            continue
+        # Use completion time minus duration as approximate start time
+        completion_ms = ev.get('eventDate', 0)
+        start_ms = completion_ms - duration_sec * 1000
+        watering_events.append({
             'zone_name': zone_name,
-            'sub_type': sub,
-            'event_date': ev.get('eventDate', 0),
+            'start_ms': start_ms,
+            'duration_sec': duration_sec,
         })
-
-    # Pair started/completed
-    started = [e for e in zone_events if e['sub_type'] == 'ZONE_STARTED']
-    completed = [e for e in zone_events if e['sub_type'] == 'ZONE_COMPLETED']
-
-    watering_events = []
-    for s in started:
-        # Find the next completed event for this zone
-        match = None
-        for c in completed:
-            if c['zone_name'] == s['zone_name'] and c['event_date'] > s['event_date']:
-                if not match or c['event_date'] < match['event_date']:
-                    match = c
-        duration_sec = int((match['event_date'] - s['event_date']) / 1000) if match else 0
-        if duration_sec >= 300:  # Only count runs >= 5 min
-            watering_events.append({
-                'zone_name': s['zone_name'],
-                'start_ms': s['event_date'],
-                'duration_sec': duration_sec,
-            })
 
     return watering_events
 
@@ -689,9 +685,10 @@ def build_services(rachio, sensecraft, zones):
 # ── Main aggregation ──
 dashboard_data = {}
 data_lock = threading.Lock()
-_last_good_zones = []       # preserve last successful zone fetch
-_last_good_zones_at = None  # ISO timestamp of last good zone data
+_last_good_zones = []           # preserve last successful zone fetch
+_last_good_zones_at = None      # ISO timestamp of last good zone data
 _ZONE_CACHE_FILE = Path(__file__).parent / '.zone_cache.json'
+_last_good_telemetry: Dict[str, list] = {}  # eui → last successful telemetry payload
 
 def _save_zone_cache(zones, timestamp):
     """Persist last good zone data to disk so it survives restarts."""
@@ -865,14 +862,19 @@ def api_debug_events():
     device_ids = rachio.get_device_ids()
     if not device_ids:
         return jsonify({'error': 'No Rachio devices'}), 400
+    device = rachio.get_device(device_ids[0])
     raw = rachio.get_events(device_ids[0]) or []
     events = parse_watering_events(raw)
     zone_names_in_events = sorted(set(e['zone_name'] for e in events))
     zone_names_in_data = [z['name'] for z in zones]
+    raw_zone_events = [e for e in raw if e.get('type') == 'ZONE_STATUS'][:20]
+    schedule_rules = device.get('scheduleRules', []) if device else []
     return jsonify({
         'zone_names_in_events': zone_names_in_events,
         'zone_names_in_data': zone_names_in_data,
         'watering_events': events[:50],
+        'raw_zone_events': raw_zone_events,
+        'schedule_rules': schedule_rules,
     })
 
 @app.route('/api/health')
