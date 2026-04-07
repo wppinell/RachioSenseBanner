@@ -421,15 +421,60 @@ def parse_watering_events(raw_events):
 
     return watering_events
 
-def compute_zone_runtime(watering_events, zone_name, hours):
-    """Sum runtime in minutes for a zone over past N hours."""
-    cutoff_ms = int((datetime.now() - timedelta(hours=hours)).timestamp() * 1000)
-    zn = zone_name.lower().strip()
-    total_sec = sum(
-        e['duration_sec'] for e in watering_events
-        if e['zone_name'].lower().strip() == zn and e['start_ms'] >= cutoff_ms
-    )
-    return total_sec // 60
+def compute_scheduled_runtime(schedule_rules, zone_id):
+    """Compute scheduled daily and weekly runtime in minutes for a zone.
+
+    Reads from schedule_rules config rather than historical events, so values
+    reflect the intended schedule regardless of weather skips or pauses.
+    Returns (daily_min, weekly_min) as rounded integers.
+
+    Handles:
+      INTERVAL_N  — runs every N days (e.g. INTERVAL_2 = every other day = 3.5×/wk)
+      DAY_OF_WEEK_N — runs on specific days of the week (count = runs/wk)
+    """
+    weekly_sec = 0.0
+
+    for rule in schedule_rules:
+        if not rule.get('enabled', False):
+            continue
+
+        # Find this zone's per-run duration within this rule
+        zone_duration_sec = None
+        for z in rule.get('zones', []):
+            if z.get('zoneId') == zone_id:
+                zone_duration_sec = z.get('duration', 0)
+                break
+        if zone_duration_sec is None:
+            continue  # zone not in this rule
+
+        job_types = rule.get('scheduleJobTypes', [])
+
+        # Interval-based: INTERVAL_N means "every N days"
+        runs_per_week = None
+        for jt in job_types:
+            if jt.startswith('INTERVAL_'):
+                try:
+                    n = int(jt.split('_')[1])
+                    runs_per_week = 7.0 / n
+                except (IndexError, ValueError):
+                    pass
+                break
+
+        # Day-of-week: count how many specific days are scheduled
+        if runs_per_week is None:
+            dow_count = sum(1 for jt in job_types if jt.startswith('DAY_OF_WEEK_'))
+            if dow_count:
+                runs_per_week = float(dow_count)
+
+        if runs_per_week is None:
+            logger.warning(f'Unknown schedule type for rule "{rule.get("name")}": {job_types}')
+            continue
+
+        weekly_sec += zone_duration_sec * runs_per_week
+
+    weekly_min = round(weekly_sec / 60)
+    daily_min  = round(weekly_sec / 7 / 60)
+    return daily_min, weekly_min
 
 # ── Schedule next run ──
 def compute_next_run(schedule_rule):
@@ -496,9 +541,9 @@ def build_zone_data(rachio, sensecraft, device_id):
         return [], []
 
     zones = device.get('zones', [])
-    raw_events = rachio.get_events(device_id) or []
-    watering_events = parse_watering_events(raw_events)
     schedule_rules = device.get('scheduleRules', [])
+    # Note: events are not fetched here — runtimes are schedule-based, not event-based.
+    # Use /api/debug/events for historical event inspection.
 
     zone_data = []
     all_schedule_info = []
@@ -544,9 +589,8 @@ def build_zone_data(rachio, sensecraft, device_id):
 
         status, color = moisture_status(zone_moisture)
 
-        # Compute runtimes
-        r1d = compute_zone_runtime(watering_events, zone_name, 24)
-        r7d = compute_zone_runtime(watering_events, zone_name, 168)
+        # Compute scheduled runtimes from schedule_rules config
+        r1d, r7d = compute_scheduled_runtime(schedule_rules, zone_id)
 
         # Find schedule for this zone
         sched_name = None
