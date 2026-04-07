@@ -780,18 +780,24 @@ def aggregate_all_data():
         }
 
 # ── Background refresh thread ──
-RETRY_INTERVAL = 60  # seconds to wait before retrying after a failed/empty fetch
+RETRY_INTERVAL_NO_DATA = 300   # 5 min — no cached data at all, need something to show
+RETRY_INTERVAL_STALE = 900     # 15 min — have cached data, back off to avoid burning tokens
 
 def background_refresh():
     global dashboard_data
     while True:
-        # If no fresh zones yet, retry sooner
         with data_lock:
             is_stale = dashboard_data.get('stale', False)
             has_zones = bool(dashboard_data.get('zones'))
-        sleep_time = RETRY_INTERVAL if (is_stale or not has_zones) else REFRESH_INTERVAL
-        if is_stale or not has_zones:
-            logger.info(f'Zone data stale/missing — retrying in {RETRY_INTERVAL}s')
+
+        if not has_zones:
+            sleep_time = RETRY_INTERVAL_NO_DATA
+            logger.info(f'No zone data at all — retrying in {RETRY_INTERVAL_NO_DATA}s')
+        elif is_stale:
+            sleep_time = RETRY_INTERVAL_STALE
+            logger.info(f'Using cached zones — retrying in {RETRY_INTERVAL_STALE}s')
+        else:
+            sleep_time = REFRESH_INTERVAL
         time.sleep(sleep_time)
         try:
             new_data = aggregate_all_data()
