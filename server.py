@@ -98,13 +98,46 @@ class Cache:
 
 cache = Cache()
 
+# ── Disk-backed Rachio identity/rate-limit state ──
+# These values survive server restarts so a crash-loop won't re-fetch
+# identity data or hit the API while rate-limited.
+_RACHIO_STATE_FILE = Path(__file__).parent / '.rachio_state.json'
+
+def _load_rachio_state() -> dict:
+    try:
+        if _RACHIO_STATE_FILE.exists():
+            with open(_RACHIO_STATE_FILE) as f:
+                return json.load(f)
+    except Exception as e:
+        logger.warning(f'Failed to load rachio state: {e}')
+    return {}
+
+def _save_rachio_state(state: dict) -> None:
+    try:
+        with open(_RACHIO_STATE_FILE, 'w') as f:
+            json.dump(state, f)
+    except Exception as e:
+        logger.warning(f'Failed to save rachio state: {e}')
+
+_rachio_state = _load_rachio_state()
+if _rachio_state:
+    logger.info(f'Loaded Rachio state from disk: person_id={bool(_rachio_state.get("person_id"))}, '
+                f'device_ids={len(_rachio_state.get("device_ids") or [])}, '
+                f'rate_limited_until={_rachio_state.get("rate_limited_until")}')
+
 # ── Session with retries ──
 def create_session_with_retries():
+    """Build an HTTP session with retry on transient errors only.
+
+    IMPORTANT: 429 is deliberately NOT in the retry list. Retrying rate-limit
+    responses multiplies API token consumption by 4× and accelerates exhaustion.
+    When we see a 429, we back off at the application level instead.
+    """
     session = requests.Session()
     retry_strategy = Retry(
-        total=3,
+        total=2,
         backoff_factor=1,
-        status_forcelist=[429, 500, 502, 503, 504],
+        status_forcelist=[500, 502, 503, 504],  # no 429!
         allowed_methods=['GET', 'POST']
     )
     adapter = HTTPAdapter(max_retries=retry_strategy)
@@ -117,10 +150,19 @@ class RachioAPI:
     def __init__(self, api_key):
         self.api_key = api_key
         self.session = create_session_with_retries()
-        self.person_id = None
         self.device_name = None
         self.api_remaining = None
+        # Hydrate identifiers and rate-limit deadline from disk-backed state
+        self.person_id = _rachio_state.get('person_id')
+        self._device_ids_cached = _rachio_state.get('device_ids') or []
+        rl = _rachio_state.get('rate_limited_until')
         self.rate_limited_until = None
+        if rl:
+            try:
+                from dateutil.parser import isoparse
+                self.rate_limited_until = isoparse(rl)
+            except Exception:
+                self.rate_limited_until = None
 
     def _headers(self):
         return {
@@ -128,6 +170,15 @@ class RachioAPI:
             'Content-Type': 'application/json',
             'Accept': 'application/json',
         }
+
+    def _persist_state(self):
+        """Save identifiers + rate-limit deadline to disk for restart survival."""
+        _rachio_state['person_id'] = self.person_id
+        _rachio_state['device_ids'] = self._device_ids_cached
+        _rachio_state['rate_limited_until'] = (
+            self.rate_limited_until.isoformat() if self.rate_limited_until else None
+        )
+        _save_rachio_state(_rachio_state)
 
     def _handle_rate_limit(self, response):
         remaining = response.headers.get('X-RateLimit-Remaining')
@@ -139,10 +190,12 @@ class RachioAPI:
                 try:
                     from dateutil.parser import isoparse
                     self.rate_limited_until = isoparse(reset)
-                except:
-                    self.rate_limited_until = datetime.now(timezone.utc) + timedelta(minutes=5)
+                except Exception:
+                    self.rate_limited_until = datetime.now(timezone.utc) + timedelta(minutes=30)
             else:
-                self.rate_limited_until = datetime.now(timezone.utc) + timedelta(minutes=5)
+                self.rate_limited_until = datetime.now(timezone.utc) + timedelta(minutes=30)
+            logger.warning(f'Rachio rate-limited until {self.rate_limited_until}')
+            self._persist_state()
 
     @property
     def is_rate_limited(self):
@@ -154,6 +207,9 @@ class RachioAPI:
         """GET /person/info → returns {"id": "...", ...} directly"""
         if self.person_id:
             return self.person_id
+        if self.is_rate_limited:
+            logger.warning('Rachio rate-limited, skipping person_id fetch')
+            return None
         cached = cache.get('rachio_person_id')
         if cached:
             self.person_id = cached
@@ -165,6 +221,7 @@ class RachioAPI:
             data = r.json()
             self.person_id = data.get('id')
             cache.set('rachio_person_id', self.person_id, CACHE_TTL_DEVICES)
+            self._persist_state()
             return self.person_id
         except Exception as e:
             logger.error(f'Rachio /person/info failed: {e}')
@@ -172,11 +229,17 @@ class RachioAPI:
 
     def get_device_ids(self):
         """GET /person/{id} → returns {"id": "...", "devices": [{"id": "..."}]}"""
+        if self._device_ids_cached:
+            return self._device_ids_cached
         person_id = self.get_person_id()
         if not person_id:
             return []
+        if self.is_rate_limited:
+            logger.warning('Rachio rate-limited, skipping device_ids fetch')
+            return []
         cached = cache.get('rachio_device_ids')
         if cached:
+            self._device_ids_cached = cached
             return cached
         try:
             r = self.session.get(f'{RACHIO_BASE}/person/{person_id}', headers=self._headers(), timeout=15)
@@ -185,6 +248,8 @@ class RachioAPI:
             data = r.json()
             ids = [d['id'] for d in data.get('devices', [])]
             cache.set('rachio_device_ids', ids, CACHE_TTL_DEVICES)
+            self._device_ids_cached = ids
+            self._persist_state()
             return ids
         except Exception as e:
             logger.error(f'Rachio /person/{person_id} failed: {e}')
@@ -195,6 +260,9 @@ class RachioAPI:
         cached = cache.get(f'rachio_device_{device_id}')
         if cached:
             return cached
+        if self.is_rate_limited:
+            logger.warning(f'Rachio rate-limited, skipping device fetch for {device_id}')
+            return None
         try:
             r = self.session.get(f'{RACHIO_BASE}/device/{device_id}', headers=self._headers(), timeout=15)
             self._handle_rate_limit(r)

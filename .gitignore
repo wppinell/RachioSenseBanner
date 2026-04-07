@@ -4,3 +4,5 @@
 __pycache__/
 *.pyc
 .zone_cache.json
+.rachio_state.json
+venv/
