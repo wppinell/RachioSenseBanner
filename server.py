@@ -41,17 +41,17 @@ LATITUDE = float(os.getenv('LATITUDE', '33.4484'))
 LONGITUDE = float(os.getenv('LONGITUDE', '-112.0740'))
 ZIP_CODE = os.getenv('ZIP_CODE', '')
 PORT = int(os.getenv('PORT', '8080'))
-REFRESH_INTERVAL = int(os.getenv('REFRESH_INTERVAL', '1800'))
+REFRESH_INTERVAL = int(os.getenv('REFRESH_INTERVAL', '21600'))  # 6 hours — Rachio schedule/zone data changes rarely
 
 RACHIO_BASE = 'https://api.rach.io/1/public'
 SENSECRAFT_BASE = 'https://sensecap.seeed.cc/openapi'
 WEATHER_BASE = 'https://api.open-meteo.com/v1/forecast'
 
 # Cache TTLs (seconds)
-CACHE_TTL_DEVICES = 1800
-CACHE_TTL_EVENTS  = 1800
-CACHE_TTL_SENSORS = 1800
-CACHE_TTL_WEATHER = 1800
+CACHE_TTL_DEVICES = 21600   # 6 hrs — zone config and schedule rules don't change often
+CACHE_TTL_EVENTS  = 21600   # 6 hrs — only used by /api/debug/events
+CACHE_TTL_SENSORS = 1800    # 30 min — soil moisture does change through the day
+CACHE_TTL_WEATHER = 1800    # 30 min — weather updates frequently
 
 # ── Weather mappings ──
 WEATHER_EMOJI = {
