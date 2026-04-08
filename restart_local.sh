@@ -5,8 +5,8 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 DASHBOARD_URL="http://localhost:8090"
 
 echo "🔄 Stopping any existing server..."
-pkill -f "python.*server.py" 2>/dev/null
-sleep 1
+lsof -ti:8090 | xargs kill -9
+sleep 2
 
 echo "🚀 Starting RachioSense server..."
 cd "$SCRIPT_DIR"

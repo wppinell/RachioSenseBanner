@@ -131,6 +131,62 @@
   }
   .sd{width:6px;height:6px;border-radius:50%}
 
+  /* ── Offline-skeleton tile variant ── */
+  .tile.offline .tile-bg{
+    background:linear-gradient(145deg,#1a1f2e 0%,#0f1320 60%,#080a10 100%);
+    opacity:1;
+  }
+  .tile.offline .tile-ov{
+    background:radial-gradient(ellipse at 50% 40%, rgba(30,38,60,0.4) 0%, rgba(8,10,16,0.85) 100%);
+  }
+  .tile.offline .zname{
+    opacity:0.85;
+  }
+  .offline-badge{
+    display:inline-flex;align-items:center;gap:5px;
+    padding:3px 9px;border-radius:999px;
+    background:rgba(255,202,40,0.18);
+    border:1px solid rgba(255,202,40,0.45);
+    color:#ffca28;font-size:10px;font-weight:800;
+    letter-spacing:0.8px;text-transform:uppercase;
+    margin-left:8px;vertical-align:middle;
+  }
+  .offline-badge::before{
+    content:'';display:inline-block;
+    width:6px;height:6px;border-radius:50%;
+    background:#ffca28;box-shadow:0 0 6px rgba(255,202,40,0.8);
+    animation:pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse{
+    0%,100%{opacity:1}
+    50%{opacity:0.35}
+  }
+  .cartoon-mega{
+    font-size:180px;line-height:1;
+    filter:drop-shadow(0 8px 32px rgba(0,0,0,0.6));
+    margin:8px 0 4px 0;
+    animation:floaty 4s ease-in-out infinite;
+  }
+  @keyframes floaty{
+    0%,100%{transform:translateY(0)}
+    50%{transform:translateY(-6px)}
+  }
+  .skeleton-ring{
+    width:120px;height:120px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    border:8px solid rgba(255,255,255,0.10);
+    background:rgba(255,255,255,0.03);
+    font-size:28px;font-weight:800;
+    color:var(--text-sec);
+    font-variant-numeric:tabular-nums;
+  }
+  .skeleton-ring .sr-unit{
+    font-size:12px;color:var(--text-dim);
+    letter-spacing:0.8px;text-transform:uppercase;
+    margin-top:2px;
+  }
+  .skeleton-ring-inner{display:flex;flex-direction:column;align-items:center;gap:2px}
+
   /* ── Alerts Panel ── */
   .alerts-panel{
     border-radius:16px;overflow:hidden;
@@ -516,7 +572,7 @@ function arc(p, r) {
 }
 
 function fm(m) {
-  return !m ? '0m' : m < 60 ? m + 'm' : (m % 60 === 0 ? (m / 60) + 'h' : (m / 60).toFixed(1) + 'h');
+  return !m ? '?m' : m < 60 ? m + 'm' : (m % 60 === 0 ? (m / 60) + 'h' : (m / 60).toFixed(1) + 'h');
 }
 
 // Main moisture gauge — BIG
@@ -559,10 +615,44 @@ function ringSVG(pct, val, cls, sz) {
 function tile(z) {
   const moisture = z.moisture;
   const color = mc(moisture);
-  const p1 = Math.min((z.runtime1d || 0) / MX_1D * 100, 100);
-  const p7 = Math.min((z.runtime7d || 0) / MX_7D * 100, 100);
   const sensors = z.sensors || [];
   const icon = zoneIcon(z.name);
+
+  // Offline-skeleton variant: Rachio is unreachable and we're rendering from
+  // durable config + live SenseCraft moisture. Runtimes are unknown (??).
+  if (z.offline) {
+    const hasRuntime = z.runtime1d != null || z.runtime7d != null;
+    const ringDay = hasRuntime
+      ? ringSVG(Math.min((z.runtime1d || 0) / MX_1D * 100, 100), fm(z.runtime1d) + '/day', 'day', 120)
+      : `<div class="skeleton-ring"><div class="skeleton-ring-inner">??<div class="sr-unit">/day</div></div></div>`;
+    const ringWk = hasRuntime
+      ? ringSVG(Math.min((z.runtime7d || 0) / MX_7D * 100, 100), fm(z.runtime7d) + '/wk', 'wk', 120)
+      : `<div class="skeleton-ring"><div class="skeleton-ring-inner">??<div class="sr-unit">/wk</div></div></div>`;
+
+    return `<div class="tile offline">
+      <div class="tile-bg"></div>
+      <div class="tile-ov"></div>
+      <div class="tile-c">
+        <div class="zname">${z.name}<span class="offline-badge">offline</span></div>
+        <div class="tile-mid" style="flex-direction:column;gap:4px">
+          <div class="cartoon-mega">${icon}</div>
+          ${gaugeSVG(moisture, color, 180)}
+        </div>
+        <div class="tile-bot">
+          <div class="ring-row">
+            ${ringDay}
+            ${ringWk}
+          </div>
+          <div class="sensor-row">
+            ${sensors.map(s => `<div class="sc"><div class="sd" style="background:${s.color || '#888'}"></div>${s.id} ${s.moisture !== null ? s.moisture.toFixed(0) : '--'}%</div>`).join('')}
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  const p1 = Math.min((z.runtime1d || 0) / MX_1D * 100, 100);
+  const p7 = Math.min((z.runtime7d || 0) / MX_7D * 100, 100);
 
   return `<div class="tile">
     <div class="tile-bg" style="background-image:url('${z.imageUrl || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect fill=%22%23333%22 width=%22100%22 height=%22100%22/%3E%3C/svg%3E'}')"></div>
@@ -814,6 +904,15 @@ function formatUpdatedTime(isoString) {
   }
 }
 
+function setText(id, text) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = text;
+}
+function setHTML(id, html) {
+  const el = document.getElementById(id);
+  if (el) el.innerHTML = html;
+}
+
 function updateHeader(data) {
   const weather = data.weather || {};
   const current = weather.current || {};
@@ -821,24 +920,66 @@ function updateHeader(data) {
 
   const temp = current.temp || '--';
   const icon = current.icon || '❓';
-  document.getElementById('temp').textContent = `${icon} ${temp}°F`;
+  setText('temp', `${icon} ${temp}°F`);
 
   const humidity = current.humidity || '--';
-  document.getElementById('humidity').textContent = `💧 ${humidity}%`;
+  setText('humidity', `💧 ${humidity}%`);
 
   const wind = current.wind || '--';
-  document.getElementById('wind').textContent = `💨 ${wind} mph`;
+  setText('wind', `💨 ${wind} mph`);
 
   const sensecraft = services.sensecraft || {};
   const sensecraftDot = sensecraft.connected ? 'dot' : 'dot offline';
-  document.getElementById('svc-sensecraft').innerHTML = `<span class="${sensecraftDot}"></span>SenseCraft`;
+  setHTML('svc-sensecraft', `<span class="${sensecraftDot}"></span>SenseCraft`);
 
   const rachio = services.rachio || {};
-  const rachioDot = rachio.connected ? 'dot' : 'dot offline';
-  const rachioCounts = (rachio.apiRemaining !== undefined && rachio.apiRemaining !== null)
-    ? `${rachio.apiRemaining} left`
-    : '--';
-  document.getElementById('svc-rachio').innerHTML = `<span class="${rachioDot}"></span>Rachio · ${rachioCounts}`;
+  const rachioDot = (rachio.connected && rachio.apiRemaining !== 0) ? 'dot' : 'dot offline';
+  let rachioLabel;
+  if (rachio.apiRemaining === 0 && rachio.resetAt) {
+    rachioLabel = `Rachio · resets at ${formatPhoenixTime(rachio.resetAt)}`;
+  } else if (rachio.apiRemaining !== undefined && rachio.apiRemaining !== null) {
+    const rateStr = (rachio.tokensPerHour !== undefined && rachio.tokensPerHour !== null)
+      ? ` · ${rachio.tokensPerHour}/hr`
+      : '';
+    rachioLabel = `Rachio · ${rachio.apiRemaining} left${rateStr}`;
+  } else {
+    rachioLabel = 'Rachio · --';
+  }
+  setHTML('svc-rachio', `<span class="${rachioDot}"></span>${rachioLabel}`);
+}
+
+function formatCountdown(isoString) {
+  try {
+    const target = new Date(isoString).getTime();
+    const diff = target - Date.now();
+    if (diff <= 0) return 'now';
+    const totalMin = Math.floor(diff / 60000);
+    const h = Math.floor(totalMin / 60);
+    const m = totalMin % 60;
+    if (h >= 1) return `${h}h ${m}m`;
+    return `${m}m`;
+  } catch (e) {
+    return '--';
+  }
+}
+
+// Arizona doesn't observe DST, so Phoenix time is always MST (UTC-7).
+// Format a reset timestamp as e.g. "5:00 PM MST" or "Tue 5:00 PM MST" if it's not today.
+function formatPhoenixTime(isoString) {
+  try {
+    const d = new Date(isoString);
+    const tz = 'America/Phoenix';
+    const time = d.toLocaleTimeString('en-US', {
+      hour: 'numeric', minute: '2-digit', hour12: true, timeZone: tz,
+    });
+    const todayPhx = new Date().toLocaleDateString('en-US', { timeZone: tz });
+    const targetPhx = d.toLocaleDateString('en-US', { timeZone: tz });
+    if (todayPhx === targetPhx) return `${time} MST`;
+    const weekday = d.toLocaleDateString('en-US', { weekday: 'short', timeZone: tz });
+    return `${weekday} ${time} MST`;
+  } catch (e) {
+    return '--';
+  }
 }
 
 function renderDashboard(data) {
@@ -860,11 +1001,31 @@ function renderDashboard(data) {
 
   updateHeader(data);
 
-  // Stale data banner
+  // Stale data banner — honest about *why* we're stale:
+  //  • If Rachio's daily quota is known-exhausted, show the countdown to the next reset.
+  //  • If we're in offline-skeleton mode (no telemetry cache at all), say so.
+  //  • If the backend recorded a specific lastError, show that.
+  //  • Otherwise we really are retrying in the background.
   const banner = document.getElementById('stale-banner');
   if (data.stale) {
+    const rachio = (data.services && data.services.rachio) || {};
+    const resetAt = rachio.resetAt;
+    const quotaExhausted = rachio.apiRemaining === 0 && resetAt;
+    const lastError = rachio.lastError;
     const ago = data.staleDataFrom ? timeAgo(data.staleDataFrom) : '';
-    document.getElementById('stale-msg').textContent = `Showing cached data${ago ? ' from ' + ago : ''} — retrying...`;
+    let msg;
+    if (data.offline && quotaExhausted) {
+      msg = `Rachio offline — resets at ${formatPhoenixTime(resetAt)}`;
+    } else if (data.offline) {
+      msg = 'Rachio offline — showing skeleton view';
+    } else if (quotaExhausted) {
+      msg = `Showing cached data${ago ? ' from ' + ago : ''} — Rachio resets at ${formatPhoenixTime(resetAt)}`;
+    } else if (lastError && lastError.message) {
+      msg = `Showing cached data${ago ? ' from ' + ago : ''} — ${lastError.message}`;
+    } else {
+      msg = `Showing cached data${ago ? ' from ' + ago : ''} — retrying...`;
+    }
+    document.getElementById('stale-msg').textContent = msg;
     banner.classList.add('visible');
   } else {
     banner.classList.remove('visible');
@@ -919,7 +1080,8 @@ setInterval(fetchAndRender, 30000);
 !function t() {
   const now = new Date();
   const time = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-  document.getElementById('clk').textContent = time;
+  const clkEl = document.getElementById('clk');
+  if (clkEl) clkEl.textContent = time;
   const wxdt = document.getElementById('wx-datetime');
   if (wxdt) {
     const date = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
