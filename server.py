@@ -554,7 +554,7 @@ class SenseCraftAPI:
         Falls back to last known reading if the API is rate-limited or unreachable,
         so moisture values remain visible on the dashboard during SenseCraft outages.
         """
-        global _last_good_telemetry
+        global _last_good_telemetry, _last_sensecraft_sync
         cached = cache.get(f'sensecraft_{eui}')
         if cached is not None:
             return cached
@@ -571,6 +571,7 @@ class SenseCraftAPI:
                 result = data.get('data', [])
                 cache.set(f'sensecraft_{eui}', result, CACHE_TTL_SENSORS)
                 _last_good_telemetry[eui] = result  # save for stale fallback
+                _last_sensecraft_sync = datetime.now(timezone.utc).isoformat()
                 return result
             logger.warning(f'SenseCraft telemetry {eui} code: {data.get("code")} msg: {data.get("msg")}')
         except Exception as e:
@@ -1184,7 +1185,7 @@ def build_services(rachio, sensecraft, zones):
         'sensecraft': {
             'connected': sensecraft is not None and SENSECRAFT_API_KEY != '',
             'sensorCount': sensor_count,
-            'lastSync': 'just now',
+            'lastSync': _last_sensecraft_sync,
         },
         'rachio': {
             'connected': rachio is not None and RACHIO_API_KEY != '',
@@ -1219,6 +1220,7 @@ def _record_last_error(msg: str) -> None:
     }
 _ZONE_CACHE_FILE = Path(__file__).parent / '.zone_cache.json'
 _last_good_telemetry: Dict[str, list] = {}  # eui → last successful telemetry payload
+_last_sensecraft_sync: Optional[str] = None  # ISO timestamp of last successful SenseCraft telemetry fetch
 
 def _save_zone_cache(zones, timestamp):
     """Persist last good zone data to disk so it survives restarts."""
@@ -1568,6 +1570,23 @@ def favicon():
 def api_data():
     with data_lock:
         return jsonify(dashboard_data)
+
+@app.route('/api/force-refresh', methods=['POST'])
+def api_force_refresh():
+    """Force an immediate data refresh, bypassing the background timer.
+
+    Respects the Rachio circuit-breaker (rate limits, daily cap) but will
+    always re-fetch SenseCraft moisture data.
+    """
+    try:
+        new_data = aggregate_all_data()
+        with data_lock:
+            global dashboard_data
+            dashboard_data = new_data
+        return jsonify({'ok': True, 'updatedAt': new_data.get('updatedAt')})
+    except Exception as e:
+        logger.error(f'Force refresh failed: {e}', exc_info=True)
+        return jsonify({'ok': False, 'error': str(e)}), 500
 
 @app.route('/api/sensors')
 def api_sensors():
