@@ -103,6 +103,13 @@ class Cache:
         self.data[f'{key}_ttl'] = ttl
         self.timestamps[key] = time.time()
 
+    def clear_prefix(self, prefix):
+        """Remove all cache entries whose key starts with prefix."""
+        keys = [k for k in self.data if k.startswith(prefix)]
+        for k in keys:
+            self.data.pop(k, None)
+            self.timestamps.pop(k, None)
+
 cache = Cache()
 
 # ── ISO timestamp parser (stdlib-only, no dateutil dependency) ──
@@ -1588,6 +1595,8 @@ def api_force_refresh():
     always re-fetch SenseCraft moisture data.
     """
     try:
+        # Bust the SenseCraft cache so we actually re-fetch moisture from the API
+        cache.clear_prefix('sensecraft_')
         new_data = aggregate_all_data()
         with data_lock:
             global dashboard_data
