@@ -557,6 +557,8 @@ class SenseCraftAPI:
         global _last_good_telemetry, _last_sensecraft_sync
         cached = cache.get(f'sensecraft_{eui}')
         if cached is not None:
+            if not _last_sensecraft_sync:
+                _last_sensecraft_sync = datetime.now(timezone.utc).isoformat()
             return cached
         try:
             r = self.session.get(
@@ -580,6 +582,8 @@ class SenseCraftAPI:
         # Fall back to last known reading rather than returning nothing
         if eui in _last_good_telemetry:
             logger.warning(f'SenseCraft {eui[-4:]} — using stale telemetry')
+            if not _last_sensecraft_sync:
+                _last_sensecraft_sync = datetime.now(timezone.utc).isoformat()
             return _last_good_telemetry[eui]
         return []
 
@@ -1410,7 +1414,7 @@ def build_skeleton_zones(sensecraft):
 _last_good_zones, _last_good_zones_at = _load_zone_cache()
 
 def aggregate_all_data():
-    global _last_good_zones, _last_good_zones_at
+    global _last_good_zones, _last_good_zones_at, _last_sensecraft_sync
     logger.info('Aggregating dashboard data...')
     try:
         rachio = RachioAPI(RACHIO_API_KEY) if RACHIO_API_KEY else None
@@ -1483,6 +1487,11 @@ def aggregate_all_data():
                 logger.warning(f'Serving {len(zones)} offline skeleton zones (no telemetry cache)')
             else:
                 stale = False
+
+        # If zones have moisture data but we haven't recorded a sync time yet
+        # (e.g. using cached zones after restart), seed the timestamp now.
+        if not _last_sensecraft_sync and any(z.get('moisture') is not None for z in zones):
+            _last_sensecraft_sync = now
 
         services = build_services(rachio, sensecraft, zones)
         services['rachio']['resetAt'] = _next_rachio_reset_iso()
