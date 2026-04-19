@@ -7,4 +7,5 @@ __pycache__/
 .rachio_state.json
 .weather_cache.json
 .rachio_config.json
+rachio_snapshot.json
 venv/

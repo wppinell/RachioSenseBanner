@@ -57,7 +57,7 @@ WEATHER_BASE = 'https://api.open-meteo.com/v1/forecast'
 # Cache TTLs (seconds)
 CACHE_TTL_DEVICES = 21600   # 6 hrs — zone config and schedule rules don't change often
 CACHE_TTL_EVENTS  = 21600   # 6 hrs — only used by /api/debug/events
-CACHE_TTL_SENSORS = 1800    # 30 min — soil moisture does change through the day
+CACHE_TTL_SENSORS = 900     # 15 min — soil moisture does change through the day
 CACHE_TTL_WEATHER = 1800    # 30 min — weather updates frequently
 
 # ── Weather mappings ──
