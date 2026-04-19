@@ -42,6 +42,9 @@ LONGITUDE = float(os.getenv('LONGITUDE', '-112.0740'))
 ZIP_CODE = os.getenv('ZIP_CODE', '')
 PORT = int(os.getenv('PORT', '8080'))
 REFRESH_INTERVAL = int(os.getenv('REFRESH_INTERVAL', '21600'))  # 6 hours — Rachio schedule/zone data changes rarely
+# SenseCraft has no daily cap like Rachio, so we poll it on a much shorter cadence so the
+# "Moisture X ago" banner stays live. Decoupled from REFRESH_INTERVAL so Rachio stays slow.
+SENSECRAFT_REFRESH_INTERVAL = int(os.getenv('SENSECRAFT_REFRESH_INTERVAL', '900'))  # 15 min
 
 # Circuit-breaker floors for the Rachio API. These are enforced BEFORE any HTTP call and
 # persist across process restarts via .rachio_state.json, so a crash-loop cannot burn the
@@ -1564,11 +1567,98 @@ def background_refresh():
         except Exception as e:
             logger.error(f'Background refresh error: {e}')
 
+# ── SenseCraft-only refresh ──
+# SenseCraft moisture data changes through the day but the Rachio API has a daily token
+# cap, so we decouple the two: the main loop runs every REFRESH_INTERVAL (hours), and this
+# smaller loop re-fetches just SenseCraft every SENSECRAFT_REFRESH_INTERVAL (minutes),
+# mutating the moisture/status/sensors fields on the existing dashboard_data in place.
+def refresh_sensecraft_only():
+    """Re-fetch SenseCraft moisture and update dashboard_data without touching Rachio."""
+    global dashboard_data
+    if not (SENSECRAFT_API_KEY and SENSECRAFT_API_SECRET):
+        return
+    sensor_zone_map = config.get('sensor_zone_map', {})
+    if not sensor_zone_map:
+        return
+
+    # Bust the per-EUI cache so get_latest_telemetry actually hits the API (and advances
+    # _last_sensecraft_sync). Without this the 15-min cache would often short-circuit us.
+    cache.clear_prefix('sensecraft_')
+    sensecraft = SenseCraftAPI(SENSECRAFT_API_KEY, SENSECRAFT_API_SECRET)
+
+    # Group fresh readings by zone_id, mirroring build_zone_data's averaging logic.
+    zone_readings: Dict[str, list] = {}
+    for eui, zone_id in sensor_zone_map.items():
+        try:
+            telemetry = sensecraft.get_latest_telemetry(eui)
+        except Exception as e:
+            logger.warning(f'SenseCraft-only refresh: {eui[-4:]} failed: {e}')
+            continue
+        if not telemetry:
+            continue
+        moisture_val = None
+        for channel in telemetry:
+            for point in channel.get('points', []):
+                if point.get('measurement_id') == '4103':
+                    moisture_val = point.get('measurement_value')
+        if moisture_val is not None:
+            zone_readings.setdefault(zone_id, []).append((eui, moisture_val))
+
+    with data_lock:
+        zones = dashboard_data.get('zones', [])
+        updated = 0
+        for zone in zones:
+            readings = zone_readings.get(zone.get('id'))
+            if not readings:
+                continue
+            sensors_list = []
+            avg_moisture = None
+            for eui, m in readings:
+                _, s_color = moisture_status(m)
+                sensors_list.append({
+                    'id': eui[-4:],
+                    'eui': eui,
+                    'moisture': round(m, 1),
+                    'color': s_color,
+                })
+                avg_moisture = m if avg_moisture is None else (avg_moisture + m) / 2
+            status, color = moisture_status(avg_moisture)
+            zone['moisture'] = round(avg_moisture, 1)
+            zone['status'] = status
+            zone['statusColor'] = color
+            zone['sensors'] = sensors_list
+            updated += 1
+
+        # Rebuild moisture-related alerts from the new zone statuses, but preserve the
+        # schedule alerts (icon '📅') since those are built from Rachio data we didn't refetch.
+        old_alerts = dashboard_data.get('alerts', [])
+        schedule_alerts = [a for a in old_alerts if a.get('icon') == '📅']
+        dashboard_data['alerts'] = build_alerts(zones, []) + schedule_alerts
+
+        # Surface the new lastSync on the services block (updated by get_latest_telemetry).
+        services = dashboard_data.get('services', {})
+        if 'sensecraft' in services:
+            services['sensecraft']['lastSync'] = _last_sensecraft_sync
+
+    logger.info(f'SenseCraft-only refresh complete — updated moisture for {updated} zones')
+
+def sensecraft_background_refresh():
+    """Poll SenseCraft on its own short cadence, independent of Rachio's 6h loop."""
+    while True:
+        time.sleep(SENSECRAFT_REFRESH_INTERVAL)
+        try:
+            refresh_sensecraft_only()
+        except Exception as e:
+            logger.error(f'SenseCraft-only refresh error: {e}', exc_info=True)
+
 # Initial load
 dashboard_data = aggregate_all_data()
 
 refresh_thread = threading.Thread(target=background_refresh, daemon=True)
 refresh_thread.start()
+
+sensecraft_thread = threading.Thread(target=sensecraft_background_refresh, daemon=True)
+sensecraft_thread.start()
 
 # ── Flask routes ──
 @app.route('/')
@@ -1785,5 +1875,6 @@ if __name__ == '__main__':
     logger.info(f'Rachio configured: {bool(RACHIO_API_KEY)}')
     logger.info(f'SenseCraft configured: {bool(SENSECRAFT_API_KEY)}')
     logger.info(f'Refresh interval: {REFRESH_INTERVAL}s')
+    logger.info(f'SenseCraft refresh interval: {SENSECRAFT_REFRESH_INTERVAL}s')
 
     app.run(host='0.0.0.0', port=PORT, debug=False, threaded=True)
